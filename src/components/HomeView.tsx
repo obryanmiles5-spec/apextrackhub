@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
-import { motion } from 'motion/react';
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { 
   Search, Globe, Shield, Anchor, Zap, Plane, Truck, ClipboardList, 
-  CheckCircle2, Star, ChevronDown, ChevronUp, Award 
+  CheckCircle2, Star, ChevronDown, ChevronUp, Award, ArrowLeft, ArrowRight, Play, Pause
 } from 'lucide-react';
 import { Shipment } from '../types';
 import { captureEvent } from '../lib/tracking';
@@ -13,10 +13,125 @@ interface HomeViewProps {
   isAdminAuthenticated?: boolean;
 }
 
+const BRANDS = [
+  { name: 'Boeing Aerospace', industry: 'Aero Trans Carrier' },
+  { name: 'Caterpillar Inc.', industry: 'Heavy Equipment' },
+  { name: 'Ford Motor Co.', industry: 'Automotive Freight' },
+  { name: 'General Electric', industry: 'Energy & Power' },
+  { name: 'Siemens Industrial', industry: 'Systems & Control' },
+  { name: 'Intel Semiconductors', industry: 'Microchip Cargo' },
+  { name: 'John Deere & Co.', industry: 'Agricultural Logistics' },
+  { name: 'Chevron Corp.', industry: 'Fuel Surcharge Partners' },
+  { name: 'Samsung Electronics', industry: 'Tech Supply Chains' },
+  { name: 'Maersk Line', industry: 'Maritime Shipping' }
+];
+
+const REVIEWS = [
+  {
+    title: "Absolutely Flawless Bulk Delivery",
+    text: "We migrated our bulk automotive imports to Apex Trans, and the customs clearance has been exemplary. The tracking records update exactly as the ship reaches coordinate waypoints.",
+    author: "Marcus Vance",
+    role: "Director of Supply Chain, Autotech US",
+    rating: 5
+  },
+  {
+    title: "C-TPAT Priority is a Game Changer",
+    text: "Apex's Tier III compliance saved our reefer containers from cargo spoilage. What usually took 5 days at Houston port now gets cleared and loaded in under 4 hours.",
+    author: "Sarah Jenkins",
+    role: "Logistics Specialist, FreshFoods Co.",
+    rating: 5
+  },
+  {
+    title: "Amazing Customer Care & Precision",
+    text: "Our high-value scientific cargo was tracked 24/7 with the GPS beacon system. Whenever we had a compliance audit question, the central desk helped us within minutes.",
+    author: "Dr. Albert Chen",
+    role: "Operations VP, BioLabs Intercontinental",
+    rating: 5
+  },
+  {
+    title: "Flawless API Syncing",
+    text: "The WooCommerce API integration is incredibly robust. Our e-commerce customers automatically receive tracking updates without our staff needing to perform manual entries.",
+    author: "Elena Rostova",
+    role: "Global Logistics Manager, NordTech Solutions",
+    rating: 5
+  },
+  {
+    title: "Industrial Cargo Specialists",
+    text: "Apex safely transported 120 tons of heavy assembly machinery from Rotterdam to Dallas. Impeccable coordination of heavy-haul flatbeds and oversize permits.",
+    author: "Thomas Wright",
+    role: "VP of Procurement, Zenith Manufacturing",
+    rating: 5
+  },
+  {
+    title: "Incredible Customs Clearance",
+    text: "Their customs brokerage in Los Angeles cleared our massive textiles shipment overnight. Saved us thousands in demurrage fees and kept our retail launch on schedule.",
+    author: "Aisha Rahman",
+    role: "Supply Chain Director, Silk Road Exports",
+    rating: 5
+  },
+  {
+    title: "Express Air Freight Savior",
+    text: "We had a critical assembly line shutdown in Munich. Apex arranged next-flight-out charter space, delivering essential turbine components in under 36 hours.",
+    author: "Klaus Meyer",
+    role: "Logistics Lead, AeroParts Group Hamburg",
+    rating: 5
+  },
+  {
+    title: "Last-Mile Perfection",
+    text: "Their metropolitan distribution fleet handles our daily inventory runs with perfect timing, clear communication, and impeccable electronic sign-off systems.",
+    author: "Devon Miller",
+    role: "Operations Manager, Apex Retail Distributors",
+    rating: 5
+  },
+  {
+    title: "Temperature Chain Mastery",
+    text: "Our organic coffee shipments require strict temperature control. Apex provided complete hour-by-hour telemetry data logs showing perfect environmental stability.",
+    author: "Carla Sanchez",
+    role: "Import/Export Specialist, Andes Coffee Co.",
+    rating: 5
+  },
+  {
+    title: "Unmatched Reliability",
+    text: "After trying three other major logistics carriers, Apex Trans stands out as the most punctual, professional, and transparent. We're moving all our shipping lanes to them.",
+    author: "Jameson O'Connor",
+    role: "Director of Operations, WestCoast Logistics",
+    rating: 5
+  }
+];
+
 export default function HomeView({ onSearch, availableShipments, isAdminAuthenticated = false }: HomeViewProps) {
   const [searchVal, setSearchVal] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+
+  // Review Slider States
+  const [reviewIdx, setReviewIdx] = useState(0);
+  const [autoplayReviews, setAutoplayReviews] = useState(true);
+
+  useEffect(() => {
+    if (!autoplayReviews) return;
+    const interval = setInterval(() => {
+      setReviewIdx((prev) => (prev + 1) % REVIEWS.length);
+    }, 4500);
+    return () => clearInterval(interval);
+  }, [autoplayReviews]);
+
+  const nextReview = () => {
+    setReviewIdx((prev) => (prev + 1) % REVIEWS.length);
+  };
+
+  const prevReview = () => {
+    setReviewIdx((prev) => (prev - 1 + REVIEWS.length) % REVIEWS.length);
+  };
+
+  const getVisibleReviews = () => {
+    const items = [];
+    for (let i = 0; i < 3; i++) {
+      const idx = (reviewIdx + i) % REVIEWS.length;
+      items.push({ ...REVIEWS[idx], originalIndex: idx });
+    }
+    return items;
+  };
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,10 +158,10 @@ export default function HomeView({ onSearch, availableShipments, isAdminAuthenti
         {/* Background Image with Dark Tint Overlay */}
         <div className="absolute inset-0 z-0">
           <img
-            src="./hero_cargo_ship.png"
+            src="https://lh3.googleusercontent.com/d/1Tuc1DLWlbBxrea70p-km4ojzLuy82cYR"
             alt="Elite Global Freight Cargo Ship"
             referrerPolicy="no-referrer"
-            className="w-full h-full object-cover opacity-60 scale-105 transform hover:scale-100 transition-transform duration-1000"
+            className="w-full h-full object-cover opacity-75 scale-105 transform hover:scale-100 transition-transform duration-1000"
           />
           <div className="absolute inset-0 bg-gradient-to-r from-slate-950/80 via-slate-900/50 to-transparent"></div>
         </div>
@@ -131,6 +246,43 @@ export default function HomeView({ onSearch, availableShipments, isAdminAuthenti
         </div>
       </section>
 
+      {/* Infinite Rotating Brand Logos Slider */}
+      <section className="bg-slate-900 py-6 overflow-hidden relative border-y border-slate-800 mx-4 lg:mx-8 rounded-3xl">
+        {/* Left & Right gradient overlays */}
+        <div className="absolute left-0 top-0 bottom-0 w-24 bg-gradient-to-r from-slate-900 to-transparent z-10 pointer-events-none"></div>
+        <div className="absolute right-0 top-0 bottom-0 w-24 bg-gradient-to-l from-slate-900 to-transparent z-10 pointer-events-none"></div>
+
+        <div className="max-w-6xl mx-auto px-6 mb-4 text-center">
+          <p className="text-[10px] uppercase font-mono tracking-widest text-sky-400 font-bold opacity-75">
+            Trusted Carrier & Intermodal Partner for Global Leaders
+          </p>
+        </div>
+
+        <div className="flex w-full relative">
+          <motion.div
+            className="flex gap-16 whitespace-nowrap px-4"
+            animate={{ x: [0, -2000] }}
+            transition={{
+              repeat: Infinity,
+              ease: "linear",
+              duration: 35
+            }}
+          >
+            {[...BRANDS, ...BRANDS, ...BRANDS, ...BRANDS].map((brand, bIdx) => (
+              <div key={bIdx} className="flex items-center gap-3 select-none hover:opacity-100 opacity-50 transition duration-300">
+                <div className="w-10 h-10 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-center text-sky-400 font-mono font-bold tracking-tighter shadow-inner">
+                  {brand.name.split(' ')[0].substring(0, 2).toUpperCase()}
+                </div>
+                <div className="flex flex-col text-left">
+                  <span className="text-white font-sans font-bold text-xs sm:text-sm tracking-wide">{brand.name}</span>
+                  <span className="text-slate-400 text-[9px] font-mono uppercase tracking-widest leading-none mt-0.5">{brand.industry}</span>
+                </div>
+              </div>
+            ))}
+          </motion.div>
+        </div>
+      </section>
+
       {/* Trust Statistics Strip */}
       <section className="max-w-6xl mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-8">
         {[
@@ -202,11 +354,11 @@ export default function HomeView({ onSearch, availableShipments, isAdminAuthenti
               </div>
             </div>
 
-            {/* Air Cargo Card */}
+            {/* Air Cargo Card - Priority Jet Expeditions */}
             <div className="bg-white rounded-2xl overflow-hidden shadow-xs hover:shadow-md transition duration-200 group border border-slate-100">
               <div className="h-48 overflow-hidden relative">
                 <img 
-                  src="./freight_airplane.png" 
+                  src="https://lh3.googleusercontent.com/d/1xWrKYwWYr3bVfPFwojWKAHU3GwnwPV2B" 
                   alt="Charter Aeroplane loading logistics"
                   referrerPolicy="no-referrer"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
@@ -298,62 +450,97 @@ export default function HomeView({ onSearch, availableShipments, isAdminAuthenti
         </div>
       </section>
 
-      {/* Trustpilot Reviews Section */}
+      {/* Trustpilot Reviews Section - Revolution Slider Rotating Automatically */}
       <section className="max-w-6xl mx-auto px-6 space-y-8">
-        <div className="text-center space-y-3">
-          <div className="flex items-center justify-center gap-1 text-emerald-500">
-            <span className="font-bold text-slate-900 mr-2 font-sans">Rated Excellent on</span>
-            <Star className="w-5 h-5 fill-emerald-500 text-emerald-500" />
-            <span className="font-extrabold text-slate-900 tracking-tight font-sans text-lg">Trustpilot</span>
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-6 pb-2 border-b border-slate-100">
+          <div className="space-y-2 text-center sm:text-left">
+            <div className="flex items-center justify-center sm:justify-start gap-1 text-emerald-500">
+              <span className="font-bold text-slate-900 mr-2 font-sans text-sm sm:text-base">Rated Excellent on</span>
+              <Star className="w-5 h-5 fill-emerald-500 text-emerald-500" />
+              <span className="font-extrabold text-slate-900 tracking-tight font-sans text-lg">Trustpilot</span>
+            </div>
+            <div className="flex items-center justify-center sm:justify-start gap-1 text-xs">
+              {[1, 2, 3, 4, 5].map((s) => (
+                <span key={s} className="w-4 h-4 bg-emerald-500 rounded-xs flex items-center justify-center text-white text-[9px] font-bold">★</span>
+              ))}
+              <span className="text-slate-500 font-medium ml-2 font-sans text-[11px] sm:text-xs">4.8 out of 5 based on 12,480+ enterprise reviews</span>
+            </div>
           </div>
-          <div className="flex items-center justify-center gap-1">
-            {[1, 2, 3, 4, 5].map((s) => (
-              <span key={s} className="w-5 h-5 bg-emerald-500 rounded-xs flex items-center justify-center text-white text-[10px] font-bold">★</span>
-            ))}
-            <span className="text-slate-600 text-xs sm:text-sm font-semibold ml-2 font-sans">4.8 out of 5 based on 12,480+ enterprise reviews</span>
+
+          {/* Autoplay & Slider controls */}
+          <div className="flex items-center gap-3">
+            <span className="text-slate-400 font-mono text-[11px] font-semibold bg-slate-150 px-2 py-1 rounded">
+              {reviewIdx + 1} - {(reviewIdx + 2) % REVIEWS.length + 1} - {(reviewIdx + 3) % REVIEWS.length + 1} of {REVIEWS.length}
+            </span>
+            <button 
+              onClick={() => {
+                setAutoplayReviews(!autoplayReviews);
+              }}
+              className="p-2 border border-slate-200 hover:bg-slate-100 rounded-xl text-slate-500 transition cursor-pointer"
+              title={autoplayReviews ? "Pause Autoplay" : "Start Autoplay"}
+            >
+              {autoplayReviews ? <Pause className="w-4 h-4 text-sky-600" /> : <Play className="w-4 h-4 text-emerald-600" />}
+            </button>
+            <button 
+              onClick={prevReview}
+              className="p-2 border border-slate-200 hover:bg-slate-100 rounded-xl text-slate-700 transition cursor-pointer"
+              title="Previous Reviews"
+            >
+              <ArrowLeft className="w-4 h-4" />
+            </button>
+            <button 
+              onClick={nextReview}
+              className="p-2 border border-slate-200 hover:bg-slate-100 rounded-xl text-slate-700 transition cursor-pointer"
+              title="Next Reviews"
+            >
+              <ArrowRight className="w-4 h-4" />
+            </button>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {[
-            {
-              title: "Absolutely Flawless Bulk Delivery",
-              text: "We migrated our bulk automotive imports to Apex Trans, and the customs clearance has been exemplary. The tracking records update exactly as the ship reaches coordinate waypoints.",
-              author: "Marcus Vance",
-              role: "Director of Supply Chain, Autotech US",
-              rating: 5
-            },
-            {
-              title: "C-TPAT Priority is a Game Changer",
-              text: "Apex's Tier III compliance saved our reefer containers from cargo spoilage. What usually took 5 days at Houston port now gets cleared and loaded in under 4 hours.",
-              author: "Sarah Jenkins",
-              role: "Logistics Specialist, FreshFoods Co.",
-              rating: 5
-            },
-            {
-              title: "Amazing Customer Care & Precision",
-              text: "Our high-value scientific cargo was tracked 24/7 with the GPS beacon system. Whenever we had a compliance audit question, the central desk helped us within minutes.",
-              author: "Dr. Albert Chen",
-              role: "Operations VP, BioLabs Intercontinental",
-              rating: 5
-            }
-          ].map((review, rIdx) => (
-            <div key={rIdx} className="bg-white p-6 rounded-2xl border border-slate-100 shadow-xs space-y-4 hover:shadow-sm transition">
-              <div className="flex items-center gap-1 text-emerald-500">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <span key={star} className="w-4 h-4 bg-emerald-500 rounded-xs flex items-center justify-center text-white text-[9px] font-bold">★</span>
-                ))}
-              </div>
-              <div className="space-y-1">
-                <h4 className="font-bold text-slate-900 text-sm font-sans">"{review.title}"</h4>
-                <p className="text-slate-500 text-xs sm:text-sm leading-relaxed font-sans">{review.text}</p>
-              </div>
-              <div className="border-t border-slate-100 pt-3 text-xs font-sans">
-                <p className="font-bold text-slate-800">{review.author}</p>
-                <p className="text-slate-400 text-[10px]">{review.role}</p>
-              </div>
-            </div>
-          ))}
+        {/* Sliding Window Showcase */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 relative overflow-hidden min-h-[290px] px-1 py-2">
+          <AnimatePresence mode="popLayout">
+            {getVisibleReviews().map((review, rIdx) => (
+              <motion.div 
+                key={review.originalIndex}
+                initial={{ opacity: 0, x: 50, scale: 0.98 }}
+                animate={{ opacity: 1, x: 0, scale: 1 }}
+                exit={{ opacity: 0, x: -50, scale: 0.98 }}
+                transition={{ duration: 0.45, ease: "easeInOut" }}
+                className={`bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-4 hover:shadow-md transition duration-350 flex flex-col justify-between ${
+                  rIdx === 1 ? 'hidden md:flex' : rIdx === 2 ? 'hidden lg:flex' : 'flex'
+                }`}
+              >
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-0.5 text-emerald-500">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <span key={star} className="w-4 h-4 bg-emerald-500 rounded-xs flex items-center justify-center text-white text-[9px] font-bold">★</span>
+                      ))}
+                    </div>
+                    <span className="text-[10px] font-mono text-slate-300 font-bold bg-slate-50 px-2 py-0.5 rounded">
+                      VERIFIED CLIENT #{review.originalIndex + 1}
+                    </span>
+                  </div>
+                  <div className="space-y-1.5">
+                    <h4 className="font-bold text-slate-900 text-sm font-sans leading-snug">"{review.title}"</h4>
+                    <p className="text-slate-500 text-xs sm:text-sm leading-relaxed font-sans">{review.text}</p>
+                  </div>
+                </div>
+
+                <div className="border-t border-slate-100 pt-3 text-xs font-sans flex items-center justify-between">
+                  <div>
+                    <p className="font-extrabold text-slate-800">{review.author}</p>
+                    <p className="text-slate-400 text-[10px] uppercase font-mono tracking-wider">{review.role}</p>
+                  </div>
+                  <div className="w-8 h-8 rounded-full bg-sky-50 text-sky-650 flex items-center justify-center font-bold text-[10px] border border-sky-100 uppercase">
+                    {review.author.split(' ').map(n => n[0]).join('')}
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </AnimatePresence>
         </div>
       </section>
 
@@ -422,3 +609,5 @@ function DirectUploadIcon(props: any) {
     </svg>
   );
 }
+
+

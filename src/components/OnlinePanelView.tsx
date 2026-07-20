@@ -333,7 +333,10 @@ export default function OnlinePanelView({ shipments, onUpdateShipments, onResetS
   return (
     <div className="max-w-7xl mx-auto px-6 pb-24 space-y-12">
       {/* Admin Panel Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center p-6 bg-slate-950 text-white rounded-3xl border border-slate-800 gap-6">
+      <div 
+        className="flex flex-col md:flex-row justify-between items-start md:items-center p-6 text-white rounded-3xl border border-slate-800 gap-6 overflow-hidden bg-cover bg-center bg-no-repeat shadow-sm"
+        style={{ backgroundImage: `linear-gradient(rgba(15, 23, 42, 0.88), rgba(15, 23, 42, 0.88)), url('https://lh3.googleusercontent.com/d/19y8tABlqkTXY987Jx6N1QouO7oBn-pqw')` }}
+      >
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <span className="px-2.5 py-0.5 bg-sky-500 text-slate-950 font-mono text-[10px] uppercase font-bold rounded">WooCommerce Cargo Core</span>

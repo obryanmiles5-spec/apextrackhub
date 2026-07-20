@@ -56,15 +56,10 @@ export default function ServicesView() {
   return (
     <div className="space-y-16 pb-16">
       {/* Services Intro */}
-      <section className="relative overflow-hidden bg-slate-900 text-white rounded-3xl mx-4 lg:mx-8 py-16 px-6">
-        <div className="absolute inset-0 z-0 opacity-15">
-          <img 
-            src="./delivery_truck.png" 
-            alt="Logistics truck fleet driving" 
-            referrerPolicy="no-referrer"
-            className="w-full h-full object-cover filter contrast-125"
-          />
-        </div>
+      <section 
+        className="relative -mt-10 py-16 px-6 rounded-3xl mx-4 lg:mx-8 overflow-hidden bg-cover bg-center bg-no-repeat shadow-sm text-white" 
+        style={{ backgroundImage: `linear-gradient(rgba(15, 23, 42, 0.82), rgba(15, 23, 42, 0.82)), url('https://lh3.googleusercontent.com/d/19y8tABlqkTXY987Jx6N1QouO7oBn-pqw')` }}
+      >
         <div className="relative z-10 max-w-4xl mx-auto text-center space-y-6">
           <span className="inline-block px-3 py-1 bg-sky-500/10 border border-sky-400/30 rounded-full text-sky-300 text-xs sm:text-sm font-semibold tracking-wide uppercase">
             LOGISTICS DEPLOYMENTS

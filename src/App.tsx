@@ -161,7 +161,7 @@ export default function App() {
           <div className="flex items-center gap-3 cursor-pointer" onClick={() => selectTab('home')}>
             <span className="w-10 h-10 bg-slate-950 rounded-xl overflow-hidden flex items-center justify-center shadow-md border border-slate-800">
               <img 
-                src="./favicon.png" 
+                src="/favicon.png" 
                 alt="Apex Track Hub" 
                 referrerPolicy="no-referrer"
                 className="w-full h-full object-cover"
@@ -385,7 +385,7 @@ export default function App() {
             <div className="flex items-center gap-3">
               <span className="w-9 h-9 bg-slate-900 rounded-lg overflow-hidden flex items-center justify-center border border-slate-800">
                 <img 
-                  src="./favicon.png" 
+                  src="/favicon.png" 
                   alt="Apex Track Hub" 
                   referrerPolicy="no-referrer"
                   className="w-full h-full object-cover"

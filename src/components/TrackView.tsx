@@ -846,7 +846,7 @@ export default function TrackView({ currentTrackingId, onSearch, availableShipme
                             <div className="space-y-4">
                               <div className="flex items-center gap-2">
                                 <span className="w-6 h-6 bg-slate-900 rounded-md overflow-hidden flex items-center justify-center border border-slate-850">
-                                  <img src="./favicon.png" alt="" className="w-full h-full object-cover" />
+                                  <img src="/favicon.png" alt="" className="w-full h-full object-cover" />
                                 </span>
                                 <span className="font-extrabold text-slate-950 tracking-tight text-[11px] uppercase">APEX INTERMODAL LOGISTICS</span>
                               </div>
