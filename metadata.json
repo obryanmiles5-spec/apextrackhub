@@ -1,0 +1,6 @@
+{
+  "name": "Logistics and Shipment Tracker",
+  "description": "A USA-based shipment tracking platform for local and international logistics, featuring tracking timeline, responsive cargo stats, and a WooCommerce-inspired cargo administration dashboard.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
