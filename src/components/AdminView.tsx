@@ -49,6 +49,10 @@ export default function AdminView() {
   const [totalWeight, setTotalWeight] = useState('');
   const [piecesCount, setPiecesCount] = useState('1');
   const [paymentMode, setPaymentMode] = useState('prepaid');
+  const [paymentMethod, setPaymentMethod] = useState('Credit Card');
+  const [paymentStatus, setPaymentStatus] = useState('Paid');
+  const [transactionId, setTransactionId] = useState('');
+  const [paymentNotes, setPaymentNotes] = useState('');
 
   const [originHarbor, setOriginHarbor] = useState('');
   const [estDeliveryDate, setEstDeliveryDate] = useState('');
@@ -198,6 +202,12 @@ export default function AdminView() {
     setPiecesCount(meta.piecesCount || '1');
     setPaymentMode(meta.paymentMode || 'prepaid');
 
+    const payDetails = meta.payment_details || {};
+    setPaymentMethod(payDetails.payment_method || 'Credit Card');
+    setPaymentStatus(payDetails.payment_status || 'Paid');
+    setTransactionId(payDetails.transaction_id || '');
+    setPaymentNotes(payDetails.payment_notes || '');
+
     setOriginHarbor(meta.originHarbor || '');
     setEstDeliveryDate(meta.estDeliveryDate || '');
     setDepartureDate(meta.departureDate || '');
@@ -235,6 +245,10 @@ export default function AdminView() {
     setTotalWeight('');
     setPiecesCount('1');
     setPaymentMode('prepaid');
+    setPaymentMethod('Credit Card');
+    setPaymentStatus('Paid');
+    setTransactionId('');
+    setPaymentNotes('');
 
     setOriginHarbor('');
     setEstDeliveryDate('');
@@ -279,6 +293,12 @@ export default function AdminView() {
       totalWeight: totalWeight.trim(),
       piecesCount: parseInt(String(piecesCount)) || 1,
       paymentMode,
+      payment_details: {
+        payment_method: paymentMethod,
+        payment_status: paymentStatus,
+        transaction_id: transactionId.trim(),
+        payment_notes: paymentNotes.trim()
+      },
       originHarbor: originHarbor.trim(),
       estDeliveryDate,
       departureDate,
@@ -879,29 +899,128 @@ export default function AdminView() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Payment Mode */}
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">
-                    Payment Mode
-                  </label>
-                  <select
-                    value={paymentMode}
-                    onChange={(e) => setPaymentMode(e.target.value)}
-                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-sky-500 text-slate-900"
-                  >
-                    <option value="prepaid">Prepaid</option>
-                    <option value="cash_on_delivery">Cash on Delivery</option>
-                    <option value="collect">Collect</option>
-                    <option value="postpaid_invoice">Postpaid Invoice</option>
-                  </select>
+              {/* Payment Method Selection Block */}
+              <div className="space-y-2.5">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">
+                  Payment Method Selector
+                </label>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {[
+                    'Apple Pay',
+                    'Bank Transfer',
+                    'Cash-App',
+                    'Chime',
+                    'Crypto',
+                    'Credit Card',
+                    'Gift Card',
+                    'Pay ID'
+                  ].map((method) => (
+                    <button
+                      key={method}
+                      type="button"
+                      onClick={() => {
+                        setPaymentMethod(method);
+                        setPaymentMode(method.toLowerCase().replace(/[\s-]/g, '_'));
+                      }}
+                      className={`py-2 px-1 border rounded-xl text-center text-[10px] font-bold transition flex items-center justify-center gap-1.5 ${
+                        paymentMethod === method
+                          ? 'bg-amber-50 border-amber-300 text-amber-900 ring-1 ring-amber-500/25 shadow-xs'
+                          : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                      }`}
+                    >
+                      {method}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Conditional Payment Detail Fields */}
+              <div className="p-4 bg-slate-100/40 border border-slate-200/50 rounded-2xl space-y-3.5">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                  Payment details for {paymentMethod}
                 </div>
 
-                {/* Total Freight Charge */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Transaction ID */}
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">
+                      {paymentMethod === 'Cash-App' && 'Cashtag / Transaction ID'}
+                      {paymentMethod === 'Crypto' && 'Wallet Address / Txn Hash'}
+                      {paymentMethod === 'Credit Card' && 'Last 4 Digits / Auth Code'}
+                      {paymentMethod === 'Gift Card' && 'Gift Card Code / PIN'}
+                      {paymentMethod === 'Pay ID' && 'Pay ID / Reference'}
+                      {paymentMethod === 'Apple Pay' && 'Device Account Num / Ref ID'}
+                      {paymentMethod === 'Bank Transfer' && 'Reference / Routing ID'}
+                      {paymentMethod === 'Chime' && 'Chime Username / Ref'}
+                    </label>
+                    <input
+                      type="text"
+                      placeholder={
+                        paymentMethod === 'Cash-App' ? '$cashtag or TXN-1234' :
+                        paymentMethod === 'Crypto' ? '0x... or Tx Hash' :
+                        paymentMethod === 'Credit Card' ? 'e.g. 4321 / AUTH-98' :
+                        paymentMethod === 'Gift Card' ? 'e.g. GFT-9842-11' :
+                        'e.g. TXN-984201'
+                      }
+                      value={transactionId}
+                      onChange={(e) => setTransactionId(e.target.value)}
+                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-sky-500 text-slate-900"
+                    />
+                  </div>
+
+                  {/* Payment Status Pill Selector */}
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">
+                      Payment Status
+                    </label>
+                    <div className="grid grid-cols-3 gap-1">
+                      {['Pending', 'Paid', 'Refunded'].map((statusOption) => (
+                        <button
+                          key={statusOption}
+                          type="button"
+                          onClick={() => setPaymentStatus(statusOption)}
+                          className={`py-2 px-1 border rounded-xl text-center text-[10px] font-bold transition ${
+                            paymentStatus === statusOption
+                              ? statusOption === 'Paid'
+                                ? 'bg-emerald-50 border-emerald-300 text-emerald-800 ring-1 ring-emerald-500/10'
+                                : statusOption === 'Refunded'
+                                ? 'bg-rose-50 border-rose-300 text-rose-800 ring-1 ring-rose-500/10'
+                                : 'bg-amber-50 border-amber-300 text-amber-800 ring-1 ring-amber-500/10'
+                              : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                          }`}
+                        >
+                          {statusOption}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Payment Notes */}
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">
-                    Total Freight Charge
+                    Payment Notes / Memo
                   </label>
+                  <input
+                    type="text"
+                    placeholder={
+                      paymentMethod === 'Cash-App' ? 'e.g. Paid via $cashtag' :
+                      paymentMethod === 'Crypto' ? 'e.g. Paid via BTC network' :
+                      'e.g. Authorized and cleared'
+                    }
+                    value={paymentNotes}
+                    onChange={(e) => setPaymentNotes(e.target.value)}
+                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-sky-500 text-slate-900"
+                  />
+                </div>
+              </div>
+
+              {/* Total Freight Charge */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">
+                  Total Freight Charge
+                </label>
                   <div className="relative">
                     <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 font-bold text-xs">
                       $
@@ -918,7 +1037,6 @@ export default function AdminView() {
                     />
                   </div>
                 </div>
-              </div>
 
               {/* Event Log Comments */}
               <div className="space-y-1.5">
@@ -1028,6 +1146,8 @@ export default function AdminView() {
 
                       const shipper = data.shipper || {};
                       const receiver = data.receiver || {};
+                      const payDetails = data.payment_details || {};
+                      const payMethod = payDetails.payment_method || data.paymentMode || '';
                       
                       return (
                         <React.Fragment key={rec.id}>
@@ -1046,9 +1166,16 @@ export default function AdminView() {
                               </div>
                             </td>
                             <td className="py-4 px-4 space-y-1">
-                              <span className="font-mono font-bold text-slate-900 bg-slate-100 px-2 py-0.5 rounded text-[11px] block w-fit">
-                                {trackId}
-                              </span>
+                              <div className="flex flex-wrap gap-1 items-center">
+                                <span className="font-mono font-bold text-slate-900 bg-slate-100 px-2 py-0.5 rounded text-[11px] block w-fit">
+                                  {trackId}
+                                </span>
+                                {payMethod && (
+                                  <span className="px-1.5 py-0.5 bg-amber-50 text-amber-700 border border-amber-100 rounded text-[9px] font-mono font-extrabold uppercase tracking-wider">
+                                    {payMethod}
+                                  </span>
+                                )}
+                              </div>
                               {recordNotes && (
                                 <p className="text-[10px] text-slate-500 max-w-xs line-clamp-1 italic leading-relaxed" title={recordNotes}>
                                   "{recordNotes}"
@@ -1145,8 +1272,28 @@ export default function AdminView() {
                                       {data.totalWeight && <p><span className="font-semibold text-slate-500 font-sans">Weight:</span> {data.totalWeight} kg/lbs</p>}
                                       {data.dimensions && <p><span className="font-semibold text-slate-500 font-sans">Dimensions:</span> {data.dimensions}</p>}
                                       {data.piecesCount && <p><span className="font-semibold text-slate-500 font-sans">Pieces count:</span> {data.piecesCount}</p>}
-                                      {data.paymentMode && <p><span className="font-semibold text-slate-500 font-sans">Payment:</span> <span className="uppercase font-mono text-[10px] bg-slate-100 px-1 py-0.5 rounded font-bold text-slate-750">{data.paymentMode.replace(/_/g, ' ')}</span></p>}
-                                      {data.totalFreightCharge && <p><span className="font-semibold text-slate-500 font-sans">Total Freight:</span> <span className="font-mono text-emerald-600 font-bold">{data.totalFreightCharge}</span></p>}
+                                      {payMethod ? (
+                                        <div className="space-y-1 pt-1 border-t border-slate-100 mt-1">
+                                          <p><span className="font-semibold text-slate-500 font-sans text-[10px]">Payment Method:</span> <span className="font-bold text-slate-800">{payMethod}</span></p>
+                                          {payDetails.payment_status && (
+                                            <p>
+                                              <span className="font-semibold text-slate-500 font-sans text-[10px]">Payment Status:</span>{' '}
+                                              <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-mono font-bold uppercase ${
+                                                payDetails.payment_status === 'Paid' ? 'bg-emerald-100 text-emerald-800' :
+                                                payDetails.payment_status === 'Refunded' ? 'bg-rose-100 text-rose-850' :
+                                                'bg-amber-100 text-amber-850'
+                                              }`}>
+                                                {payDetails.payment_status}
+                                              </span>
+                                            </p>
+                                          )}
+                                          {payDetails.transaction_id && <p><span className="font-semibold text-slate-500 font-sans text-[10px]">Transaction ID:</span> <span className="font-mono text-[10px] bg-slate-50 px-1 py-0.5 rounded text-slate-600">{payDetails.transaction_id}</span></p>}
+                                          {payDetails.payment_notes && <p><span className="font-semibold text-slate-500 font-sans text-[10px]">Notes:</span> <span className="italic text-slate-600 text-[11px]">"{payDetails.payment_notes}"</span></p>}
+                                        </div>
+                                      ) : data.paymentMode ? (
+                                        <p><span className="font-semibold text-slate-500 font-sans text-[10px]">Payment Mode:</span> <span className="uppercase font-mono text-[10px] bg-slate-100 px-1 py-0.5 rounded font-bold text-slate-750">{data.paymentMode.replace(/_/g, ' ')}</span></p>
+                                      ) : null}
+                                      {data.totalFreightCharge && <p><span className="font-semibold text-slate-500 font-sans text-[10px]">Total Freight:</span> <span className="font-mono text-emerald-600 font-bold">{data.totalFreightCharge}</span></p>}
                                       {data.originHarbor && <p><span className="font-semibold text-slate-500 font-sans">Origin Harbor:</span> {data.originHarbor}</p>}
                                       {data.estDeliveryDate && <p><span className="font-semibold text-slate-500 font-sans">Est. Delivery:</span> {data.estDeliveryDate}</p>}
                                     </div>
