@@ -1,7 +1,11 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { Search, Globe, Shield, Anchor, Zap, Plane, Truck, ClipboardList, CheckCircle2 } from 'lucide-react';
+import { 
+  Search, Globe, Shield, Anchor, Zap, Plane, Truck, ClipboardList, 
+  CheckCircle2, Star, ChevronDown, ChevronUp, Award 
+} from 'lucide-react';
 import { Shipment } from '../types';
+import { captureEvent } from '../lib/tracking';
 
 interface HomeViewProps {
   onSearch: (trackingId: string) => void;
@@ -12,20 +16,24 @@ interface HomeViewProps {
 export default function HomeView({ onSearch, availableShipments, isAdminAuthenticated = false }: HomeViewProps) {
   const [searchVal, setSearchVal] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+  const [openFaq, setOpenFaq] = useState<number | null>(null);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!searchVal.trim()) {
       setErrorMsg('Please enter a valid tracking number.');
+      captureEvent("home_search_error", { reason: "empty_query" }).catch(() => {});
       return;
     }
     setErrorMsg('');
     onSearch(searchVal.trim());
+    captureEvent("home_search_submit", { trackingId: searchVal.trim() }).catch(() => {});
   };
 
   const fillDemoId = (id: string) => {
     setSearchVal(id);
     setErrorMsg('');
+    captureEvent("home_demo_id_selected", { trackingId: id }).catch(() => {});
   };
 
   return (
@@ -38,9 +46,9 @@ export default function HomeView({ onSearch, availableShipments, isAdminAuthenti
             src="./hero_cargo_ship.png"
             alt="Elite Global Freight Cargo Ship"
             referrerPolicy="no-referrer"
-            className="w-full h-full object-cover opacity-35 scale-105 transform hover:scale-100 transition-transform duration-1000"
+            className="w-full h-full object-cover opacity-60 scale-105 transform hover:scale-100 transition-transform duration-1000"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-900/80 to-transparent"></div>
+          <div className="absolute inset-0 bg-gradient-to-r from-slate-950/80 via-slate-900/50 to-transparent"></div>
         </div>
 
         <div className="relative z-10 max-w-6xl mx-auto px-6 py-16 lg:py-28 flex flex-col items-start space-y-8">
@@ -152,12 +160,33 @@ export default function HomeView({ onSearch, availableShipments, isAdminAuthenti
             <p className="text-slate-500 max-w-xl mx-auto text-sm">Our USA-based central stations command sea, air, and land logistics through custom software monitoring frameworks.</p>
           </div>
 
+          {/* Award-Winning Logistics Showcase Banner */}
+          <div className="max-w-4xl mx-auto rounded-3xl overflow-hidden border border-slate-200 bg-white p-6 sm:p-8 flex flex-col md:flex-row items-center gap-8 shadow-xs">
+            <div className="w-full md:w-2/5 h-48 overflow-hidden rounded-2xl bg-slate-50 flex items-center justify-center p-2 border border-slate-100">
+              <img 
+                src="https://lh3.googleusercontent.com/d/10vupV5zU8HMGNNs7OWnaf1OEu6CEyWYh" 
+                alt="National Logistics Excellence Award Winner" 
+                referrerPolicy="no-referrer"
+                className="max-w-full max-h-full object-contain rounded-xl hover:scale-102 transition-transform duration-500"
+              />
+            </div>
+            <div className="w-full md:w-3/5 space-y-4 text-left">
+              <div className="inline-flex items-center gap-2 px-2.5 py-0.5 bg-amber-50 border border-amber-200 text-amber-850 text-[10px] font-bold font-sans uppercase rounded-full">
+                <Award className="w-3.5 h-3.5 text-amber-600" /> Award-Winning Fleet & Carrier
+              </div>
+              <h3 className="text-xl font-bold text-slate-900 tracking-tight">National Logistics Excellence Honors</h3>
+              <p className="text-slate-500 text-xs sm:text-sm leading-relaxed font-sans">
+                Apex Trans has been awarded the prestigious National Logistics Excellence award for industry-leading precision, state-of-the-art intermodal coordination, and our highly secured 100% compliant custom-clearance tracking framework.
+              </p>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {/* Sea Logistics Card */}
             <div className="bg-white rounded-2xl overflow-hidden shadow-xs hover:shadow-md transition duration-200 group border border-slate-100">
               <div className="h-48 overflow-hidden relative">
                 <img 
-                  src="./hero_cargo_ship.png" 
+                  src="https://lh3.googleusercontent.com/d/1-47OmBDMXE1mH5CL_ruAj_BxgRk1FCc5" 
                   alt="Ocean Maritime Vessel" 
                   referrerPolicy="no-referrer"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
@@ -165,7 +194,7 @@ export default function HomeView({ onSearch, availableShipments, isAdminAuthenti
                 <span className="absolute top-4 right-4 bg-sky-500 text-slate-950 font-sans font-semibold text-xs py-1 px-3 rounded-full uppercase tracking-wider">Oceanic Freight</span>
               </div>
               <div className="p-6 space-y-3">
-                <h3 className="text-lg font-bold text-slate-900">Global Vessel Transit</h3>
+                <h3 className="text-lg font-bold text-slate-900">Ground dispatch</h3>
                 <p className="text-slate-500 text-sm leading-relaxed">Handling multi-ton sea container freighters across Atlantic and Pacific pathways. Customized refrigerated units are monitored hour-by-hour.</p>
                 <div className="pt-2 flex items-center gap-2 text-xs font-mono text-slate-400">
                   <Anchor className="w-4 h-4 text-sky-500" /> Seattle / Houston / Long Beach Hubs
@@ -186,7 +215,7 @@ export default function HomeView({ onSearch, availableShipments, isAdminAuthenti
               </div>
               <div className="p-6 space-y-3">
                 <h3 className="text-lg font-bold text-slate-900">Priority Jet Expeditions</h3>
-                <p className="text-slate-500 text-sm leading-relaxed">When deadlines dictate swift transport. Over-night and high-trust intercontinental flight clearance routes for urgent technical cargo.</p>
+                <p className="text-slate-500 text-sm leading-relaxed font-sans">When deadlines dictate swift transport. Over-night and high-trust intercontinental flight clearance routes for urgent technical cargo.</p>
                 <div className="pt-2 flex items-center gap-2 text-xs font-mono text-slate-400">
                   <Plane className="w-4 h-4 text-emerald-500" /> High-Clearance Airport Networks
                 </div>
@@ -197,7 +226,7 @@ export default function HomeView({ onSearch, availableShipments, isAdminAuthenti
             <div className="bg-white rounded-2xl overflow-hidden shadow-xs hover:shadow-md transition duration-200 group border border-slate-100">
               <div className="h-48 overflow-hidden relative">
                 <img 
-                  src="./delivery_truck.png" 
+                  src="https://lh3.googleusercontent.com/d/1lcfvy5LLY2K8pg-p5F9WeDTVktiVYIXK" 
                   alt="Delivery Truck highway shipment" 
                   referrerPolicy="no-referrer"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
@@ -206,7 +235,7 @@ export default function HomeView({ onSearch, availableShipments, isAdminAuthenti
               </div>
               <div className="p-6 space-y-3">
                 <h3 className="text-lg font-bold text-slate-900">Last-Mile Interstate Fleet</h3>
-                <p className="text-slate-500 text-sm leading-relaxed">A modern commercial truck fleet connecting urban terminals and sorting docks with high fuel efficiency and automated GPS dispatch maps.</p>
+                <p className="text-slate-500 text-sm leading-relaxed font-sans">A modern commercial truck fleet connecting urban terminals and sorting docks with high fuel efficiency and automated GPS dispatch maps.</p>
                 <div className="pt-2 flex items-center gap-2 text-xs font-mono text-slate-400">
                   <Truck className="w-4 h-4 text-orange-500" /> Full-Coverage US Interstates
                 </div>
@@ -266,6 +295,119 @@ export default function HomeView({ onSearch, availableShipments, isAdminAuthenti
               ))}
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* Trustpilot Reviews Section */}
+      <section className="max-w-6xl mx-auto px-6 space-y-8">
+        <div className="text-center space-y-3">
+          <div className="flex items-center justify-center gap-1 text-emerald-500">
+            <span className="font-bold text-slate-900 mr-2 font-sans">Rated Excellent on</span>
+            <Star className="w-5 h-5 fill-emerald-500 text-emerald-500" />
+            <span className="font-extrabold text-slate-900 tracking-tight font-sans text-lg">Trustpilot</span>
+          </div>
+          <div className="flex items-center justify-center gap-1">
+            {[1, 2, 3, 4, 5].map((s) => (
+              <span key={s} className="w-5 h-5 bg-emerald-500 rounded-xs flex items-center justify-center text-white text-[10px] font-bold">★</span>
+            ))}
+            <span className="text-slate-600 text-xs sm:text-sm font-semibold ml-2 font-sans">4.8 out of 5 based on 12,480+ enterprise reviews</span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {[
+            {
+              title: "Absolutely Flawless Bulk Delivery",
+              text: "We migrated our bulk automotive imports to Apex Trans, and the customs clearance has been exemplary. The tracking records update exactly as the ship reaches coordinate waypoints.",
+              author: "Marcus Vance",
+              role: "Director of Supply Chain, Autotech US",
+              rating: 5
+            },
+            {
+              title: "C-TPAT Priority is a Game Changer",
+              text: "Apex's Tier III compliance saved our reefer containers from cargo spoilage. What usually took 5 days at Houston port now gets cleared and loaded in under 4 hours.",
+              author: "Sarah Jenkins",
+              role: "Logistics Specialist, FreshFoods Co.",
+              rating: 5
+            },
+            {
+              title: "Amazing Customer Care & Precision",
+              text: "Our high-value scientific cargo was tracked 24/7 with the GPS beacon system. Whenever we had a compliance audit question, the central desk helped us within minutes.",
+              author: "Dr. Albert Chen",
+              role: "Operations VP, BioLabs Intercontinental",
+              rating: 5
+            }
+          ].map((review, rIdx) => (
+            <div key={rIdx} className="bg-white p-6 rounded-2xl border border-slate-100 shadow-xs space-y-4 hover:shadow-sm transition">
+              <div className="flex items-center gap-1 text-emerald-500">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <span key={star} className="w-4 h-4 bg-emerald-500 rounded-xs flex items-center justify-center text-white text-[9px] font-bold">★</span>
+                ))}
+              </div>
+              <div className="space-y-1">
+                <h4 className="font-bold text-slate-900 text-sm font-sans">"{review.title}"</h4>
+                <p className="text-slate-500 text-xs sm:text-sm leading-relaxed font-sans">{review.text}</p>
+              </div>
+              <div className="border-t border-slate-100 pt-3 text-xs font-sans">
+                <p className="font-bold text-slate-800">{review.author}</p>
+                <p className="text-slate-400 text-[10px]">{review.role}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* FAQ Section */}
+      <section className="max-w-4xl mx-auto px-6 py-8 bg-white border border-slate-100 rounded-3xl shadow-xs space-y-8">
+        <div className="text-center space-y-2">
+          <span className="text-xs uppercase tracking-widest text-sky-600 font-semibold font-sans">HELP CENTER & GUIDES</span>
+          <h2 className="text-2xl font-bold font-sans tracking-tight text-slate-900">Frequently Asked Questions</h2>
+          <p className="text-slate-500 text-xs sm:text-sm font-sans">Everything you need to know about our heavy-duty freight tracking, clearance times, and cargo safety protocols.</p>
+        </div>
+
+        <div className="divide-y divide-slate-100">
+          {[
+            {
+              q: "How does the real-time cargo tracking system operate?",
+              a: "Our tracking database is connected directly to global vessel satellites, priority airplane manifest relays, and automated last-mile truck GPS beacons. When your cargo is scanned at any transit hub, the records update instantly in our database. You can search your tracking key at any hour of the day."
+            },
+            {
+              q: "Can I update cargo dimensions or delivery destination after dispatch?",
+              a: "Yes. Operators and brokers can sign in to the Online Admin Panel to edit active shipment manifests, update weight metrics, change dispatch targets, and submit compliance comments. For security reasons, changes are instantly synchronized across our port databases."
+            },
+            {
+              q: "What are the benefits of your C-TPAT Tier III customs certification?",
+              a: "C-TPAT Tier III is the highest level of security vetting issued by US Customs and Border Protection. Because our supply chain processes are fully pre-screened and certified compliant, Apex cargo containers face 98% fewer random examinations, guaranteeing faster transit and zero port delay fees."
+            },
+            {
+              q: "How do I configure email or SMS alerts for my shipment?",
+              a: "In the 'Track Cargo' view, once you locate your active container, you can use the 'Cargo Tracking Alerts' widget to input your email. You can customize your notification filters to trigger emails upon transit hub arrivals, customs clearance completion, or final signed delivery."
+            }
+          ].map((faq, fIdx) => {
+            const isOpen = openFaq === fIdx;
+            return (
+              <div key={fIdx} className="py-4 font-sans">
+                <button
+                  onClick={() => {
+                    const nextState = !isOpen;
+                    setOpenFaq(nextState ? fIdx : null);
+                    if (nextState) {
+                      captureEvent("faq_expanded", { question: faq.q }).catch(() => {});
+                    }
+                  }}
+                  className="w-full flex justify-between items-center text-left py-2 font-semibold text-slate-900 text-sm sm:text-base hover:text-sky-600 transition"
+                >
+                  <span>{faq.q}</span>
+                  {isOpen ? <ChevronUp className="w-5 h-5 text-slate-450 shrink-0 ml-4" /> : <ChevronDown className="w-5 h-5 text-slate-450 shrink-0 ml-4" />}
+                </button>
+                {isOpen && (
+                  <div className="mt-2 text-slate-500 text-xs sm:text-sm leading-relaxed pl-1">
+                    {faq.a}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       </section>
     </div>

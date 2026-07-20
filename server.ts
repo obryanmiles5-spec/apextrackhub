@@ -1,7 +1,9 @@
+import "dotenv/config";
 import express from "express";
 import path from "path";
 import fs from "fs";
 import { createServer as createViteServer } from "vite";
+import { trackEvent } from "./src/lib/tracking";
 
 const app = express();
 const PORT = 3000;
@@ -38,25 +40,43 @@ async function start() {
   app.use(express.json({ limit: "15mb" }));
 
   // API Endpoints for unified logistics data tracking
-  app.get("/api/shipments", (req, res) => {
+  app.get("/api/shipments", async (req, res) => {
     try {
       const list = loadShipmentsFromDb();
+      // Track read action silently
+      trackEvent("read_shipments_db", { count: list.length }).catch(() => {});
       res.json(list);
     } catch (err) {
       res.status(500).json({ error: "Failed to read database records" });
     }
   });
 
-  app.post("/api/shipments", (req, res) => {
+  app.post("/api/shipments", async (req, res) => {
     try {
       const updatedList = req.body;
       if (!Array.isArray(updatedList)) {
         return res.status(400).json({ error: "Payload must be an array of shipments" });
       }
       saveShipmentsToDb(updatedList);
+      // Track write action
+      trackEvent("write_shipments_db", { count: updatedList.length }).catch(() => {});
       res.json(updatedList);
     } catch (err) {
       res.status(500).json({ error: "Failed to update database records" });
+    }
+  });
+
+  // Central tracking proxy endpoint for client-side analytics telemetry
+  app.post("/api/track", async (req, res) => {
+    try {
+      const { event_name, event_data } = req.body;
+      if (!event_name) {
+        return res.status(400).json({ error: "event_name is required in payload" });
+      }
+      const result = await trackEvent(event_name, event_data);
+      res.json(result);
+    } catch (err: any) {
+      res.status(500).json({ error: err?.message || String(err) });
     }
   });
 

@@ -2,10 +2,11 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Building2, Ship, Globe2, HelpCircle, Phone, Mail, Clock, 
-  MapPin, Menu, X, ArrowRight, ShieldCheck, Layers, Settings, FileText, Lock, Unlock
+  MapPin, Menu, X, ArrowRight, ShieldCheck, Layers, Settings, FileText, Lock, Unlock, ShieldCheck as ShieldCheckIcon
 } from 'lucide-react';
 import { Shipment } from './types';
 import { getShipments, saveShipments, INITIAL_SHIPMENTS } from './data/mockShipments';
+import { captureEvent } from './lib/tracking';
 
 // Sub-page component imports
 import HomeView from './components/HomeView';
@@ -36,6 +37,7 @@ export default function App() {
   // Quick form for footer contact
   const [contactEmail, setContactEmail] = useState('');
   const [contactSubmitted, setContactSubmitted] = useState(false);
+  const [activeLegalModal, setActiveLegalModal] = useState<'liability' | 'surcharges' | 'privacy' | 'terms' | null>(null);
 
   // Fetch shipments from the server database
   const refreshServerShipments = async () => {
@@ -58,6 +60,13 @@ export default function App() {
     refreshServerShipments();
     // Poll the server database every 8 seconds to automatically display any additions/updates instantly!
     const intervalId = setInterval(refreshServerShipments, 8000);
+    
+    // Log initial application load event to Supabase tracking table
+    captureEvent("app_session_initialized", {
+      environment: process.env.NODE_ENV || "production",
+      referrer: document.referrer || "direct"
+    }).catch(() => {});
+
     return () => clearInterval(intervalId);
   }, []);
 
@@ -67,6 +76,7 @@ export default function App() {
     const hash = window.location.hash;
     if (params.get('portal') === 'broker' || params.get('admin') === 'true' || hash === '#admin' || hash === '#broker') {
       setActiveTab('online_panel');
+      captureEvent("admin_portal_url_override", { source: hash || "url_parameter" }).catch(() => {});
     }
   }, []);
 
@@ -81,28 +91,34 @@ export default function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updatedList)
       });
+      captureEvent("shipments_database_synchronized", { records_count: updatedList.length }).catch(() => {});
     } catch (e) {
       console.error('Error synchronizing database write-back transaction to Express server:', e);
+      captureEvent("shipments_sync_failed", { error: String(e) }).catch(() => {});
     }
   };
 
   const handleResetShipments = () => {
     if (confirm('Are you sure you want to clear/reset the active shipment registry? Custom edits will be overwritten.')) {
       handleUpdateShipments(INITIAL_SHIPMENTS);
+      captureEvent("registry_reset_triggered", {}).catch(() => {});
     }
   };
 
   // Safe tracking action triggered from anywhere
   const handleTriggerTracking = (id: string | '') => {
-    setCurrentTrackingId(id.trim().toUpperCase());
+    const cleanId = id.trim().toUpperCase();
+    setCurrentTrackingId(cleanId);
     setActiveTab('track');
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    captureEvent("cargo_tracking_triggered", { trackingId: cleanId }).catch(() => {});
   };
 
   const selectTab = (tab: ActiveTab) => {
     setActiveTab(tab);
     setMobileMenuOpen(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    captureEvent("tab_navigation", { target_tab: tab }).catch(() => {});
   };
 
   return (
@@ -413,7 +429,10 @@ export default function App() {
               <form 
                 onSubmit={(e) => {
                   e.preventDefault();
-                  if (contactEmail.trim()) setContactSubmitted(true);
+                  if (contactEmail.trim()) {
+                    setContactSubmitted(true);
+                    captureEvent("newsletter_signup", { email: contactEmail.trim() }).catch(() => {});
+                  }
                 }} 
                 className="flex gap-2"
               >
@@ -439,13 +458,91 @@ export default function App() {
         {/* Rights metadata */}
         <div className="max-w-7xl mx-auto pt-8 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-slate-600 font-mono">
           <span>© 2026 Apex Intermodal Logistics LLC. All rights reserved.</span>
-          <div className="flex gap-4 items-center">
-            <a href="#" className="hover:text-slate-400 transition">Cargo Liability Terms</a>
+          <div className="flex flex-wrap gap-x-4 gap-y-2 items-center justify-center sm:justify-end">
+            <button onClick={() => { setActiveLegalModal('liability'); captureEvent("view_legal_modal", { type: "liability" }).catch(() => {}); }} className="hover:text-slate-400 transition cursor-pointer">Cargo Liability Terms</button>
             <span>•</span>
-            <a href="#" className="hover:text-slate-400 transition">FSC Index Surcharges</a>
+            <button onClick={() => { setActiveLegalModal('surcharges'); captureEvent("view_legal_modal", { type: "surcharges" }).catch(() => {}); }} className="hover:text-slate-400 transition cursor-pointer">FSC Index Surcharges</button>
+            <span>•</span>
+            <button onClick={() => { setActiveLegalModal('privacy'); captureEvent("view_legal_modal", { type: "privacy" }).catch(() => {}); }} className="hover:text-slate-400 transition cursor-pointer">Privacy Policy</button>
+            <span>•</span>
+            <button onClick={() => { setActiveLegalModal('terms'); captureEvent("view_legal_modal", { type: "terms" }).catch(() => {}); }} className="hover:text-slate-400 transition cursor-pointer">Terms of Service</button>
           </div>
         </div>
       </footer>
+
+      {/* Legal Dialog Overlay Modal */}
+      <AnimatePresence>
+        {activeLegalModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.95, y: 15 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 15 }}
+              className="max-w-lg w-full bg-white border border-slate-100 rounded-3xl overflow-hidden shadow-2xl p-6 relative text-slate-900 text-left"
+            >
+              <button
+                onClick={() => setActiveLegalModal(null)}
+                className="absolute right-4 top-4 p-1 bg-slate-50 hover:bg-slate-100 text-slate-450 hover:text-slate-800 rounded-lg transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 pb-3 border-b border-slate-150">
+                  <ShieldCheck className="w-5 h-5 text-sky-500" />
+                  <h3 className="font-sans font-bold text-lg text-slate-950 capitalize">
+                    {activeLegalModal === 'liability' && 'Cargo Liability Terms'}
+                    {activeLegalModal === 'surcharges' && 'FSC Index Surcharges'}
+                    {activeLegalModal === 'privacy' && 'Privacy Policy'}
+                    {activeLegalModal === 'terms' && 'Terms of Service'}
+                  </h3>
+                </div>
+
+                <div className="text-slate-600 text-xs sm:text-sm leading-relaxed space-y-3 font-sans">
+                  {activeLegalModal === 'liability' && (
+                    <>
+                      <p>Under Federal Maritime Commission FMC #048291 and US DOT regulations, Apex Trans maintains direct liability insurance up to $500,000 per intermodal dry box, with active GPS tracking override support.</p>
+                      <p>For hazardous material Class 9 transits, liability cap expands to $2,000,000 subject to seal audit checks. Claims must be submitted to compliance@apextrackhub.com within 14 calendar days of port discharge.</p>
+                    </>
+                  )}
+                  {activeLegalModal === 'surcharges' && (
+                    <>
+                      <p>FSC (Fuel Surcharge) values are dynamically updated every Monday at 08:00 EST based on the Gulf Coast (PADD 3) retail on-highway diesel fuel price index.</p>
+                      <p>Current active FSC index is loaded at 12.4% for truckloads and 4.2% for intermodal rail bulk transits. Marine vessel fuel surcharges are indexed to Rotterdam bunker crude standards.</p>
+                    </>
+                  )}
+                  {activeLegalModal === 'privacy' && (
+                    <>
+                      <p>We value the security of global supply chains. Container manifest listings, shipper emails, consignee phone numbers, and commercial invoices are encrypted at rest under AES-256 standards.</p>
+                      <p>Our tracking systems do not share carrier GPS coordinates or client details with unvetted third parties. Under C-TPAT Tier III guidelines, metadata is securely audited solely by US Customs.</p>
+                    </>
+                  )}
+                  {activeLegalModal === 'terms' && (
+                    <>
+                      <p>By utilizing the Apex Intermodal logistics portal and active satellite tracking systems, you agree to comply with standard FMC container rules, demurrage clearance schedules, and secure container seal practices.</p>
+                      <p>Unauthorized access to administrative dispatch portals, spoofing cargo IDs, or running raw telemetry scanners is strictly audited under Texas State cyber-security codes.</p>
+                    </>
+                  )}
+                </div>
+
+                <div className="pt-4 border-t border-slate-100 flex justify-end">
+                  <button
+                    onClick={() => setActiveLegalModal(null)}
+                    className="px-5 py-2 bg-slate-950 hover:bg-slate-900 text-white font-sans font-semibold text-xs uppercase tracking-wider rounded-xl transition cursor-pointer"
+                  >
+                    Acknowledge
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
