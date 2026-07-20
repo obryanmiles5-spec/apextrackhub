@@ -81,7 +81,7 @@ async function start() {
   });
 
   // Vite integration middleware
-  if (process.env.NODE_ENV !== "production") {
+  if (process.env.NODE_ENV !== "production" && !process.env.VERCEL) {
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
@@ -95,11 +95,16 @@ async function start() {
     });
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`[Logistics Server] Active on port ${PORT}`);
-  });
+  // Only listen on PORT if not running in a Serverless / Vercel environment
+  if (!process.env.VERCEL) {
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`[Logistics Server] Active on port ${PORT}`);
+    });
+  }
 }
 
 start().catch((err) => {
   console.error("Critical failure during server startup:", err);
 });
+
+export default app;

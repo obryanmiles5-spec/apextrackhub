@@ -15,8 +15,9 @@ import ServicesView from './components/ServicesView';
 import TrackView from './components/TrackView';
 import OnlinePanelView from './components/OnlinePanelView';
 import LoginPortal from './components/LoginPortal';
+import AdminView from './components/AdminView';
 
-type ActiveTab = 'home' | 'about' | 'services' | 'track' | 'online_panel';
+type ActiveTab = 'home' | 'about' | 'services' | 'track' | 'online_panel' | 'admin';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<ActiveTab>('home');
@@ -74,7 +75,12 @@ export default function App() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const hash = window.location.hash;
-    if (params.get('portal') === 'broker' || params.get('admin') === 'true' || hash === '#admin' || hash === '#broker') {
+    const pathName = window.location.pathname;
+
+    if (pathName === '/admin' || hash === '#/admin' || hash === '#admin') {
+      setActiveTab('admin');
+      captureEvent("admin_route_loaded", { path: pathName }).catch(() => {});
+    } else if (params.get('portal') === 'broker' || params.get('admin') === 'true' || hash === '#broker') {
       setActiveTab('online_panel');
       captureEvent("admin_portal_url_override", { source: hash || "url_parameter" }).catch(() => {});
     }
@@ -118,6 +124,13 @@ export default function App() {
     setActiveTab(tab);
     setMobileMenuOpen(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    if (tab === 'admin') {
+      window.history.pushState(null, '', '/admin');
+    } else {
+      window.history.pushState(null, '', '/');
+    }
+
     captureEvent("tab_navigation", { target_tab: tab }).catch(() => {});
   };
 
@@ -355,6 +368,10 @@ export default function App() {
                 />
               )
             )}
+
+            {activeTab === 'admin' && (
+              <AdminView />
+            )}
           </motion.div>
         </AnimatePresence>
       </main>
@@ -394,6 +411,7 @@ export default function App() {
               <button onClick={() => selectTab('about')} className="hover:text-white transition cursor-pointer text-left py-1">Our Story</button>
               <button onClick={() => selectTab('services')} className="hover:text-white transition cursor-pointer text-left py-1">Port Services</button>
               <button onClick={() => selectTab('track')} className="hover:text-white transition cursor-pointer text-left py-1">Track Container</button>
+              <button onClick={() => selectTab('admin')} className="hover:text-white transition cursor-pointer text-left py-1 text-sky-400 font-semibold">Supabase Admin</button>
             </div>
           </div>
 

@@ -8,7 +8,7 @@ const getSupabaseCredentials = () => {
   // 1. Try process.env first (ideal for Vercel backend/serverless and Node context)
   try {
     if (typeof process !== "undefined" && process.env) {
-      url = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+      url = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://dprawgvrjrzumnijrgnl.supabase.co";
       key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
     }
   } catch (e) {
@@ -19,7 +19,7 @@ const getSupabaseCredentials = () => {
   if (!url || !key) {
     try {
       // @ts-ignore
-      url = import.meta.env?.VITE_SUPABASE_URL || import.meta.env?.NEXT_PUBLIC_SUPABASE_URL || "";
+      url = import.meta.env?.VITE_SUPABASE_URL || import.meta.env?.NEXT_PUBLIC_SUPABASE_URL || "https://dprawgvrjrzumnijrgnl.supabase.co";
       // @ts-ignore
       key = import.meta.env?.VITE_SUPABASE_ANON_KEY || import.meta.env?.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
     } catch (e) {
