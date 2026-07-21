@@ -13,9 +13,10 @@ const MASTER_PASSWORD = 'admin';
 
 export default function AdminView() {
   // Authorization States
+  const [usernameInput, setUsernameInput] = useState('');
   const [passwordInput, setPasswordInput] = useState('');
   const [isAuthorized, setIsAuthorized] = useState(() => {
-    return localStorage.getItem('apex_supabase_admin_auth') === 'true';
+    return sessionStorage.getItem('apex_supabase_admin_auth') === 'true';
   });
   const [authError, setAuthError] = useState('');
 
@@ -98,9 +99,9 @@ export default function AdminView() {
     }
   ]);
 
-  // Sync auth state to localStorage
+  // Sync auth state to sessionStorage
   useEffect(() => {
-    localStorage.setItem('apex_supabase_admin_auth', String(isAuthorized));
+    sessionStorage.setItem('apex_supabase_admin_auth', String(isAuthorized));
   }, [isAuthorized]);
 
   // Load telemetry records from Supabase
@@ -156,21 +157,22 @@ export default function AdminView() {
   // Password Authentication handler
   const handleAuthenticate = (e: React.FormEvent) => {
     e.preventDefault();
-    if (passwordInput.trim() === MASTER_PASSWORD) {
+    if (usernameInput.trim() === 'admin' && passwordInput === 'BEOK@1991!') {
       setIsAuthorized(true);
       setAuthError('');
-      setSuccessMessage('Successfully authenticated to Supabase panel.');
+      setSuccessMessage('Successfully authenticated to shipment tracking dashboard.');
       setTimeout(() => setSuccessMessage(''), 4000);
     } else {
-      setAuthError('Access Denied: Invalid security password code.');
+      setAuthError('Invalid Admin Credentials');
     }
   };
 
   // Log out handler
   const handleLogout = () => {
     setIsAuthorized(false);
+    setUsernameInput('');
     setPasswordInput('');
-    localStorage.removeItem('apex_supabase_admin_auth');
+    sessionStorage.removeItem('apex_supabase_admin_auth');
   };
 
   // Populate Form for Editing
@@ -446,20 +448,40 @@ export default function AdminView() {
   if (!isAuthorized) {
     return (
       <div className="max-w-md mx-auto my-12 px-6 py-10 bg-white rounded-2xl border border-slate-100 shadow-xl font-sans" id="supabase-admin-lock-screen">
-        <div className="flex flex-col items-center text-center space-y-6">
-          <div className="w-16 h-16 bg-rose-50 text-rose-600 rounded-full flex items-center justify-center animate-pulse">
+        <div className="flex flex-col items-center space-y-6">
+          <div className="w-16 h-16 bg-slate-50 text-slate-900 rounded-full flex items-center justify-center border border-slate-100">
             <Lock className="w-8 h-8" />
           </div>
           
-          <div className="space-y-2">
-            <h2 className="text-xl font-extrabold text-slate-900 uppercase tracking-tight">Access Restricted</h2>
-            <p className="text-xs text-slate-500 font-mono">SUPABASE TRACKING_DATA CONTROL PANEL</p>
+          <div className="space-y-2 text-center">
+            <h2 className="text-xl font-extrabold text-slate-900 uppercase tracking-tight">Admin Console Login</h2>
+            <p className="text-xs text-slate-500 font-mono">SECURE DISPATCH & TELEMETRY HUB</p>
           </div>
 
           <form onSubmit={handleAuthenticate} className="w-full space-y-4">
             <div className="space-y-1 text-left">
               <label className="text-[11px] font-bold text-slate-600 uppercase tracking-widest block">
-                Enter Master Password
+                Username
+              </label>
+              <div className="relative">
+                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
+                  <User className="w-4 h-4" />
+                </span>
+                <input
+                  type="text"
+                  placeholder="Enter username"
+                  value={usernameInput}
+                  onChange={(e) => setUsernameInput(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 focus:border-slate-950 rounded-xl text-sm focus:outline-none transition font-sans"
+                  required
+                  autoFocus
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1 text-left">
+              <label className="text-[11px] font-bold text-slate-600 uppercase tracking-widest block">
+                Password
               </label>
               <div className="relative">
                 <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
@@ -467,15 +489,13 @@ export default function AdminView() {
                 </span>
                 <input
                   type="password"
-                  placeholder="Enter administrator password..."
+                  placeholder="Enter password"
                   value={passwordInput}
                   onChange={(e) => setPasswordInput(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:bg-white font-mono text-center tracking-widest transition"
+                  className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 focus:border-slate-950 rounded-xl text-sm focus:outline-none transition font-sans"
                   required
-                  autoFocus
                 />
               </div>
-              <p className="text-[10px] text-slate-400 font-mono text-center mt-1">Hint: Type <span className="font-bold text-slate-600">admin</span> to unlock</p>
             </div>
 
             {authError && (
@@ -489,7 +509,7 @@ export default function AdminView() {
               type="submit"
               className="w-full py-3 bg-slate-950 text-white rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-slate-900 transition shadow-md cursor-pointer"
             >
-              Authorize Session
+              Sign In
             </button>
           </form>
         </div>

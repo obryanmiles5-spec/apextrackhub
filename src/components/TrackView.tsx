@@ -126,19 +126,33 @@ export default function TrackView({ currentTrackingId, onSearch, availableShipme
     setShowSmtpModal(true);
   };
 
-  const handleRegisterAlert = (e: React.FormEvent) => {
+  const handleRegisterAlert = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim() || !selectedShipment) return;
 
     setIsRegistering(true);
     setSuccessMessage(null);
 
-    // Simulate establishing connection to real-time notification brokers
-    setTimeout(() => {
+    const emailVal = email.trim();
+    const trackingIdVal = selectedShipment.id;
+
+    try {
+      const response = await fetch('/api/send-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          type: 'alert_registration',
+          email: emailVal,
+          trackingId: trackingIdVal
+        })
+      });
+
       const newAlert: CargoAlert = {
         id: Math.random().toString(36).substring(2, 9),
-        shipmentId: selectedShipment.id,
-        email: email.trim(),
+        shipmentId: trackingIdVal,
+        email: emailVal,
         milestones: alertMilestones,
         delays: alertDelays,
         delivery: alertDelivery,
@@ -151,15 +165,38 @@ export default function TrackView({ currentTrackingId, onSearch, availableShipme
       );
       
       if (exists) {
-        setSuccessMessage(`Alert update confirmed! Email "${email.trim()}" is already registered for shipment ${isAdminAuthenticated ? selectedShipment.id : '••••-••••-••••'}.`);
+        setSuccessMessage(`Alert update confirmed! Email "${emailVal}" is already registered for shipment ${isAdminAuthenticated ? trackingIdVal : '••••-••••-••••'}.`);
       } else {
         setActiveAlerts(prev => [newAlert, ...prev]);
-        setSuccessMessage(`Simulated alert established successfully! Dispatch logs will stream notifications to ${email.trim()}.`);
+        if (response.ok) {
+          setSuccessMessage(`Alert established successfully! Telemetry dispatch notification stream connected to ${emailVal}.`);
+        } else {
+          setSuccessMessage(`Alert logged offline. Notification dispatch was simulated for ${emailVal}.`);
+        }
       }
 
       setEmail('');
+    } catch (err) {
+      console.error(err);
+      const newAlert: CargoAlert = {
+        id: Math.random().toString(36).substring(2, 9),
+        shipmentId: trackingIdVal,
+        email: emailVal,
+        milestones: alertMilestones,
+        delays: alertDelays,
+        delivery: alertDelivery,
+        createdAt: new Date().toISOString()
+      };
+      const exists = activeAlerts.some(
+        a => a.email.toLowerCase() === newAlert.email.toLowerCase() && a.shipmentId === newAlert.shipmentId
+      );
+      if (!exists) {
+        setActiveAlerts(prev => [newAlert, ...prev]);
+      }
+      setSuccessMessage(`Alert logged. Notification dispatch was simulated for ${emailVal}.`);
+    } finally {
       setIsRegistering(false);
-    }, 1050);
+    }
   };
 
   const handleRemoveAlert = (alertId: string) => {

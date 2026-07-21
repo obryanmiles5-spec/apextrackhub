@@ -38,6 +38,8 @@ export default function App() {
   // Quick form for footer contact
   const [contactEmail, setContactEmail] = useState('');
   const [contactSubmitted, setContactSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [contactError, setContactError] = useState<string | null>(null);
   const [activeLegalModal, setActiveLegalModal] = useState<'liability' | 'surcharges' | 'privacy' | 'terms' | null>(null);
 
   // Fetch shipments from the server database
@@ -441,34 +443,68 @@ export default function App() {
             
             {contactSubmitted ? (
               <div className="p-3 bg-slate-900 rounded-xl border border-slate-800 text-[11px] text-emerald-400">
-                ✓ Subscription approved. Rates inbox dispatched.
+                ✓ Thank you for subscribing! Rates inbox dispatched.
               </div>
             ) : (
-              <form 
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  if (contactEmail.trim()) {
-                    setContactSubmitted(true);
-                    captureEvent("newsletter_signup", { email: contactEmail.trim() }).catch(() => {});
-                  }
-                }} 
-                className="flex gap-2"
-              >
-                <input
-                  type="email"
-                  required
-                  placeholder="name@business.com"
-                  value={contactEmail}
-                  onChange={(e) => setContactEmail(e.target.value)}
-                  className="bg-slate-900 border border-slate-820 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-550 flex-1 focus:outline-hidden"
-                />
-                <button
-                  type="submit"
-                  className="bg-sky-500 hover:bg-sky-400 text-slate-950 font-sans font-bold text-xs px-3.5 py-2.5 rounded-xl uppercase tracking-wider transition cursor-pointer"
+              <div className="space-y-2">
+                <form 
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    const emailVal = contactEmail.trim();
+                    if (!emailVal) return;
+
+                    setIsSubmitting(true);
+                    setContactError(null);
+
+                    try {
+                      const response = await fetch('/api/send-email', {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                          type: 'newsletter_signup',
+                          email: emailVal
+                        })
+                      });
+
+                      if (response.ok) {
+                        setContactSubmitted(true);
+                        // Call captureEvent for logging analytics
+                        captureEvent("newsletter_signup", { email: emailVal }).catch(() => {});
+                      } else {
+                        const errData = await response.json().catch(() => ({}));
+                        setContactError(errData.error || 'Failed to process subscription request.');
+                      }
+                    } catch (err) {
+                      setContactError('Network error occurred. Please try again.');
+                    } finally {
+                      setIsSubmitting(false);
+                    }
+                  }} 
+                  className="flex gap-2"
                 >
-                  Join
-                </button>
-              </form>
+                  <input
+                    type="email"
+                    required
+                    disabled={isSubmitting}
+                    placeholder="name@business.com"
+                    value={contactEmail}
+                    onChange={(e) => setContactEmail(e.target.value)}
+                    className="bg-slate-900 border border-slate-820 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-550 flex-1 focus:outline-hidden disabled:opacity-50"
+                  />
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="bg-sky-500 hover:bg-sky-400 text-slate-950 font-sans font-bold text-xs px-3.5 py-2.5 rounded-xl uppercase tracking-wider transition cursor-pointer disabled:bg-slate-700 disabled:text-slate-400"
+                  >
+                    {isSubmitting ? 'Joining...' : 'Join'}
+                  </button>
+                </form>
+                {contactError && (
+                  <p className="text-[10px] text-red-400">{contactError}</p>
+                )}
+              </div>
             )}
           </div>
         </div>

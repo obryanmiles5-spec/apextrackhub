@@ -81,24 +81,226 @@ async function start() {
     }
   });
 
-  // Zoho SMTP Email Notification Endpoint for shipment updates
+  // Zoho SMTP Email Notification Endpoint for shipment updates & newsletter signup
   app.post("/api/send-email", async (req, res) => {
     try {
-      const shipment = req.body;
-      if (!shipment || !shipment.trackingId) {
-        return res.status(400).json({ error: "Missing shipment data or trackingId in request body" });
+      const payload = req.body;
+      if (!payload) {
+        return res.status(400).json({ error: "Missing payload in request body" });
       }
 
       const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS } = process.env;
-      
+
+      // Handle newsletter_signup events specifically:
+      if (payload.type === "newsletter_signup" || payload.event === "newsletter_signup" || payload.event_type === "newsletter_signup") {
+        const subscriberEmail = payload.email;
+        if (!subscriberEmail || !subscriberEmail.includes("@")) {
+          return res.status(400).json({ error: "Invalid subscriber email address" });
+        }
+
+        // Fallback simulation if SMTP credentials are missing
+        if (!SMTP_HOST || !SMTP_USER || !SMTP_PASS) {
+          console.warn("[Email Service] Warning: Zoho SMTP credentials not fully configured in environment. Simulating newsletter subscription mails.");
+          return res.json({
+            success: true,
+            simulated: true,
+            message: `SMTP credentials not configured. Simulated newsletter emails for subscriber: ${subscriberEmail}`
+          });
+        }
+
+        const transporter = nodemailer.createTransport({
+          host: SMTP_HOST || 'smtp.zoho.com',
+          port: Number(SMTP_PORT) || 465,
+          secure: true,
+          auth: {
+            user: SMTP_USER,
+            pass: SMTP_PASS
+          },
+          tls: {
+            rejectUnauthorized: false
+          }
+        });
+
+        // 1. Send a notification email TO 'ship@apextrackhub.com' stating "New Subscriber Joined: [subscriber email]".
+        const adminMailOptions = {
+          from: '"Apex Trans Shipments" <ship@apextrackhub.com>',
+          to: 'ship@apextrackhub.com',
+          subject: `New Subscriber Joined: ${subscriberEmail}`,
+          text: `New Subscriber Joined: ${subscriberEmail}`,
+          html: `
+            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; padding: 24px; background-color: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0; max-width: 600px; margin: 0 auto;">
+              <h2 style="color: #0f172a; margin-top: 0; border-bottom: 2px solid #f59e0b; padding-bottom: 8px;">New Newsletter Subscriber</h2>
+              <p style="color: #475569; font-size: 14px;">A visitor to our site has registered their email address to join the Apex Intermodal newsletter distribution list.</p>
+              <div style="background-color: #f1f5f9; padding: 16px; border-radius: 8px; border-left: 4px solid #f59e0b; font-family: monospace; font-size: 14px; color: #0f172a;">
+                <strong>New Subscriber Joined:</strong> ${subscriberEmail}
+              </div>
+              <p style="color: #64748b; font-size: 11px; margin-top: 24px; text-align: center;">Apex Operational Telemetry Dispatch</p>
+            </div>
+          `
+        };
+
+        // 2. Send a clean confirmation welcome email TO the subscriber from 'ship@apextrackhub.com'.
+        const subscriberMailOptions = {
+          from: '"Apex Trans Shipments" <ship@apextrackhub.com>',
+          to: subscriberEmail,
+          subject: 'Welcome to Apex Intermodal Logistics!',
+          html: `
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <meta charset="utf-8">
+              <title>Welcome to Apex Intermodal Logistics</title>
+            </head>
+            <body style="margin:0; padding:0; background-color:#f8fafc; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;">
+              <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #f8fafc; padding: 20px 10px;">
+                <tr>
+                  <td align="center">
+                    <table cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width: 600px; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
+                      <tr>
+                        <td style="background-color: #0f172a; padding: 24px; text-align: center; border-bottom: 3px solid #f59e0b;">
+                          <h1 style="margin: 0; color: #f59e0b; font-size: 20px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase;">APEX INTERMODAL LOGISTICS</h1>
+                          <p style="margin: 4px 0 0 0; color: #94a3b8; font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em;">Newsletter Subscription Confirmed</p>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 30px; text-align: left;">
+                          <h2 style="margin-top: 0; color: #0f172a; font-size: 18px; font-weight: bold;">Subscription Confirmed!</h2>
+                          <p style="color: #475569; font-size: 14px; line-height: 1.6; margin-bottom: 16px;">Thank you for subscribing to Apex Intermodal Logistics. Your email address has been registered to receive our exclusive container rate assessments, marine carrier alerts, customs clearance regulatory changes, and fuel surcharge index updates.</p>
+                          <p style="color: #475569; font-size: 14px; line-height: 1.6; margin-bottom: 24px;">Our automated systems will deliver streamlined operational digests, keeping you fully informed about industry telemetry and port clearance flows.</p>
+                          <div style="border-top: 1px solid #e2e8f0; padding-top: 20px; font-size: 12px; color: #64748b;">
+                            Warm regards,<br>
+                            <strong>Apex Trans Customer Success</strong><br>
+                            <a href="mailto:ship@apextrackhub.com" style="color: #f59e0b; text-decoration: none;">ship@apextrackhub.com</a>
+                          </div>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </body>
+            </html>
+          `
+        };
+
+        // Fire both mail sends
+        await transporter.sendMail(adminMailOptions);
+        const info = await transporter.sendMail(subscriberMailOptions);
+        console.log(`[Email Service] Success: Registered subscriber ${subscriberEmail} and dispatched emails via Zoho SMTP.`);
+        return res.json({ success: true, messageId: info.messageId });
+      }
+
+      // Handle cargo alert registration events specifically:
+      if (payload.type === "alert_registration" || payload.event === "alert_registration" || payload.event_type === "alert_registration") {
+        const subscriberEmail = payload.email;
+        const trackingId = payload.trackingId || "General";
+        if (!subscriberEmail || !subscriberEmail.includes("@")) {
+          return res.status(400).json({ error: "Invalid subscriber email address" });
+        }
+
+        // Fallback simulation if SMTP credentials are missing
+        if (!SMTP_HOST || !SMTP_USER || !SMTP_PASS) {
+          console.warn("[Email Service] Warning: Zoho SMTP credentials not fully configured. Simulating alert registration emails.");
+          return res.json({
+            success: true,
+            simulated: true,
+            message: `SMTP credentials not configured. Simulated alert registration emails for subscriber: ${subscriberEmail} on ID: ${trackingId}`
+          });
+        }
+
+        const transporter = nodemailer.createTransport({
+          host: SMTP_HOST || 'smtp.zoho.com',
+          port: Number(SMTP_PORT) || 465,
+          secure: true,
+          auth: {
+            user: SMTP_USER,
+            pass: SMTP_PASS
+          },
+          tls: {
+            rejectUnauthorized: false
+          }
+        });
+
+        const adminMailOptions = {
+          from: '"Apex Trans Shipments" <ship@apextrackhub.com>',
+          to: 'ship@apextrackhub.com',
+          subject: `Cargo Tracking Alert Registered: ${subscriberEmail}`,
+          text: `A user registered for tracking alerts on tracking ID ${trackingId}.\nSubscriber Email: ${subscriberEmail}`,
+          html: `
+            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; padding: 24px; background-color: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0; max-width: 600px; margin: 0 auto;">
+              <h2 style="color: #0f172a; margin-top: 0; border-bottom: 2px solid #f59e0b; padding-bottom: 8px;">Telemetry Watcher Added</h2>
+              <p style="color: #475569; font-size: 14px;">A user has registered their email to receive automatic dispatch status updates and port milestones.</p>
+              <div style="background-color: #f1f5f9; padding: 16px; border-radius: 8px; font-family: monospace; font-size: 14px; color: #0f172a; line-height: 1.5;">
+                <strong>Consignment ID:</strong> ${trackingId}<br>
+                <strong>Recipient Email:</strong> ${subscriberEmail}
+              </div>
+              <p style="color: #64748b; font-size: 11px; margin-top: 24px; text-align: center;">Apex Operational Telemetry Dispatch</p>
+            </div>
+          `
+        };
+
+        const subscriberMailOptions = {
+          from: '"Apex Trans Shipments" <ship@apextrackhub.com>',
+          to: subscriberEmail,
+          subject: `Tracking Alert Stream Connected - ${trackingId}`,
+          html: `
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <meta charset="utf-8">
+              <title>Apex Telemetry Alert Stream Connected</title>
+            </head>
+            <body style="margin:0; padding:0; background-color:#f8fafc; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;">
+              <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #f8fafc; padding: 20px 10px;">
+                <tr>
+                  <td align="center">
+                    <table cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width: 600px; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
+                      <tr>
+                        <td style="background-color: #0f172a; padding: 24px; text-align: center; border-bottom: 3px solid #f59e0b;">
+                          <h1 style="margin: 0; color: #f59e0b; font-size: 20px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase;">APEX INTERMODAL LOGISTICS</h1>
+                          <p style="margin: 4px 0 0 0; color: #94a3b8; font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em;">Alert Streaming Connected</p>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 30px; text-align: left;">
+                          <h2 style="margin-top: 0; color: #0f172a; font-size: 18px; font-weight: bold;">Telemetry Alert Connected!</h2>
+                          <p style="color: #475569; font-size: 14px; line-height: 1.6; margin-bottom: 16px;">We have successfully established a telemetry tracking subscription for shipment <strong>${trackingId}</strong>.</p>
+                          <p style="color: #475569; font-size: 14px; line-height: 1.6; margin-bottom: 24px;">Automated carrier logs will stream notification digests to your email address whenever any transit milestones occur or critical delays are logged by dispatch controllers.</p>
+                          <div style="border-top: 1px solid #e2e8f0; padding-top: 20px; font-size: 12px; color: #64748b;">
+                            Warm regards,<br>
+                            <strong>Apex Trans Customer Success</strong><br>
+                            <a href="mailto:ship@apextrackhub.com" style="color: #f59e0b; text-decoration: none;">ship@apextrackhub.com</a>
+                          </div>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </body>
+            </html>
+          `
+        };
+
+        await transporter.sendMail(adminMailOptions);
+        const info = await transporter.sendMail(subscriberMailOptions);
+        console.log(`[Email Service] Success: Registered alert for subscriber ${subscriberEmail} on trackingId ${trackingId}.`);
+        return res.json({ success: true, messageId: info.messageId });
+      }
+
+      // Handle default shipment update notification
+      if (!payload.trackingId) {
+        return res.status(400).json({ error: "Missing trackingId in request body payload" });
+      }
+
       // Fallback log if SMTP credentials aren't configured yet
-      if (!SMTP_HOST || !SMTP_PORT || !SMTP_USER || !SMTP_PASS) {
-        console.warn("[Email Service] Warning: Zoho SMTP environment credentials not configured yet. Simulating successful dispatch.");
+      if (!SMTP_HOST || !SMTP_USER || !SMTP_PASS) {
+        console.warn("[Email Service] Warning: Zoho SMTP environment credentials not configured yet. Simulating successful shipment dispatch.");
         return res.json({
           success: true,
           simulated: true,
           message: "SMTP credentials not configured in environment. Detailed telemetry email logged to server logs.",
-          recipient: shipment.receiver?.email || "none"
+          recipient: payload.receiver?.email || "none"
         });
       }
 
@@ -114,7 +316,7 @@ async function start() {
         dimensions = "",
         totalFreightCharge = "",
         payment_details = {}
-      } = shipment;
+      } = payload;
 
       // Status badges coloring styling helper
       let statusBg = "#e0f2fe";
@@ -146,9 +348,9 @@ async function start() {
       }
 
       const transporter = nodemailer.createTransport({
-        host: SMTP_HOST,
-        port: parseInt(SMTP_PORT),
-        secure: parseInt(SMTP_PORT) === 465,
+        host: SMTP_HOST || 'smtp.zoho.com',
+        port: Number(SMTP_PORT) || 465,
+        secure: true,
         auth: {
           user: SMTP_USER,
           pass: SMTP_PASS
