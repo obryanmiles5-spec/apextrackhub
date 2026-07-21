@@ -3,7 +3,7 @@ import express from "express";
 import path from "path";
 import fs from "fs";
 import { createServer as createViteServer } from "vite";
-import { trackEvent } from "./src/lib/tracking";
+import { trackEvent, supabase } from "./src/lib/tracking";
 import nodemailer from "nodemailer";
 
 const app = express();
@@ -78,6 +78,81 @@ async function start() {
       res.json(result);
     } catch (err: any) {
       res.status(500).json({ error: err?.message || String(err) });
+    }
+  });
+
+  // Dedicated endpoint for newsletter subscriptions
+  app.post("/api/subscribe", async (req, res) => {
+    try {
+      const { email } = req.body;
+      if (!email || !email.includes("@")) {
+        return res.status(400).json({ error: "Invalid email address" });
+      }
+
+      // 1. Insert into Supabase (if configured)
+      if (supabase) {
+        try {
+          // Attempt to insert into subscribers table; fails gracefully if table doesn't exist
+          const { error } = await supabase.from('subscribers').insert([{ email }]);
+          if (error) {
+            console.error("[Subscribe API] Supabase insert error:", error.message);
+          } else {
+            console.log(`[Subscribe API] Recorded ${email} to Supabase subscribers table.`);
+          }
+        } catch (e) {
+          console.error("[Subscribe API] Failed to interact with Supabase:", e);
+        }
+      }
+
+      // 2. Send confirmation email via Nodemailer
+      const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS } = process.env;
+      
+      if (SMTP_HOST && SMTP_USER && SMTP_PASS) {
+        const transporter = nodemailer.createTransport({
+          host: SMTP_HOST,
+          port: Number(SMTP_PORT) || 465,
+          secure: true,
+          auth: {
+            user: SMTP_USER,
+            pass: SMTP_PASS
+          },
+          tls: {
+            rejectUnauthorized: false
+          }
+        });
+
+        const subscriberMailOptions = {
+          from: '"Apex Trans Shipments" <ship@apextrackhub.com>',
+          to: email,
+          subject: 'Welcome to Apex Intermodal Logistics!',
+          html: `
+            <div style="font-family: sans-serif; padding: 20px;">
+              <h2>Subscription Confirmed!</h2>
+              <p>Thank you for subscribing to Apex Intermodal Logistics. Your email address has been registered to receive our exclusive updates.</p>
+            </div>
+          `
+        };
+
+        const adminMailOptions = {
+          from: '"Apex Trans Shipments" <ship@apextrackhub.com>',
+          to: 'ship@apextrackhub.com',
+          subject: `New Subscriber Joined: ${email}`,
+          text: `New Subscriber Joined: ${email}`
+        };
+
+        await transporter.sendMail(subscriberMailOptions);
+        await transporter.sendMail(adminMailOptions);
+        
+        console.log(`[Subscribe API] Success: Dispatched emails for ${email}.`);
+      } else {
+        console.warn("[Subscribe API] SMTP not fully configured. Skipping email dispatch.");
+      }
+
+      return res.json({ success: true, message: "Thank you for subscribing!" });
+
+    } catch (err: any) {
+      console.error("[Subscribe API] Unexpected error:", err);
+      return res.status(500).json({ error: "Failed to process subscription request." });
     }
   });
 

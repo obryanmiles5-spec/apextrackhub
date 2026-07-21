@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Routes, Route, useNavigate, useLocation, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Building2, Ship, Globe2, HelpCircle, Phone, Mail, Clock, 
@@ -20,7 +21,17 @@ import AdminView from './components/AdminView';
 type ActiveTab = 'home' | 'about' | 'services' | 'track' | 'online_panel' | 'admin';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<ActiveTab>('home');
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  let activeTab: ActiveTab = 'home';
+  if (location.pathname === '/about') activeTab = 'about';
+  else if (location.pathname === '/services') activeTab = 'services';
+  else if (location.pathname === '/track') activeTab = 'track';
+  else if (location.pathname === '/admin') activeTab = 'admin';
+  else if (location.pathname === '/online_panel') activeTab = 'online_panel';
+  else activeTab = 'home';
+
   const [shipments, setShipments] = useState<Shipment[]>([]);
   const [currentTrackingId, setCurrentTrackingId] = useState<string>('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -80,10 +91,10 @@ export default function App() {
     const pathName = window.location.pathname;
 
     if (pathName === '/admin' || hash === '#/admin' || hash === '#admin') {
-      setActiveTab('admin');
+      navigate('/admin', { replace: true });
       captureEvent("admin_route_loaded", { path: pathName }).catch(() => {});
     } else if (params.get('portal') === 'broker' || params.get('admin') === 'true' || hash === '#broker') {
-      setActiveTab('online_panel');
+      navigate('/online_panel', { replace: true });
       captureEvent("admin_portal_url_override", { source: hash || "url_parameter" }).catch(() => {});
     }
   }, []);
@@ -117,22 +128,21 @@ export default function App() {
   const handleTriggerTracking = (id: string | '') => {
     const cleanId = id.trim().toUpperCase();
     setCurrentTrackingId(cleanId);
-    setActiveTab('track');
+    navigate('/track');
     window.scrollTo({ top: 0, behavior: 'smooth' });
     captureEvent("cargo_tracking_triggered", { trackingId: cleanId }).catch(() => {});
   };
 
   const selectTab = (tab: ActiveTab) => {
-    setActiveTab(tab);
     setMobileMenuOpen(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
-
     if (tab === 'admin') {
-      window.history.pushState(null, '', '/admin');
+      navigate('/admin');
+    } else if (tab === 'home') {
+      navigate('/');
     } else {
-      window.history.pushState(null, '', '/');
+      navigate(`/${tab}`);
     }
-
     captureEvent("tab_navigation", { target_tab: tab }).catch(() => {});
   };
 
@@ -160,14 +170,12 @@ export default function App() {
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           
           {/* Brand Logo & title */}
-          <div className="flex items-center gap-3 cursor-pointer" onClick={() => selectTab('home')}>
-            <span className="w-10 h-10 bg-slate-950 rounded-xl overflow-hidden flex items-center justify-center shadow-md border border-slate-800">
-              <img 
-                src="/favicon.png" 
-                alt="Apex Track Hub" 
-                referrerPolicy="no-referrer"
-                className="w-full h-full object-cover"
-              />
+          <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/')}>
+            <span className="w-10 h-10 bg-slate-950 rounded-xl flex items-center justify-center shadow-md border border-slate-800 text-sky-500">
+              <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" className="w-6 h-6">
+                <polygon points="50,15 90,85 10,85" fill="none" stroke="currentColor" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round"/>
+                <polygon points="50,40 75,85 25,85" fill="currentColor"/>
+              </svg>
             </span>
             <div className="flex flex-col">
               <span className="font-sans font-extrabold text-slate-950 tracking-tight leading-none text-base sm:text-lg uppercase">
@@ -198,9 +206,13 @@ export default function App() {
             ).map((tab) => {
               const isActive = activeTab === tab.id;
               return (
-                <button
+                <Link
                   key={tab.id}
-                  onClick={() => selectTab(tab.id as ActiveTab)}
+                  to={tab.id === 'home' ? '/' : `/${tab.id}`}
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
                   className={`relative px-4 py-2 rounded-xl text-xs sm:text-sm font-sans font-semibold uppercase tracking-wider transition cursor-pointer flex items-center gap-1.5 ${
                     isActive ? 'text-slate-950 font-bold' : 'text-slate-500 hover:text-slate-900'
                   }`}
@@ -218,7 +230,7 @@ export default function App() {
                       transition={{ type: 'spring', stiffness: 380, damping: 30 }}
                     />
                   )}
-                </button>
+                </Link>
               );
             })}
 
@@ -228,7 +240,7 @@ export default function App() {
                 id="header-nav-signout"
                 onClick={() => {
                   setIsAdminAuthenticated(false);
-                  selectTab('home');
+                  navigate('/');
                 }}
                 className="ml-2 px-3 py-1.5 border border-slate-200 hover:bg-slate-50 text-rose-600 hover:text-rose-700 rounded-xl text-xs font-mono font-bold uppercase transition flex items-center gap-1 cursor-pointer"
               >
@@ -240,7 +252,7 @@ export default function App() {
           {/* Action CTA Trigger Button (Right Header) */}
           <div className="hidden lg:flex items-center gap-3">
             <button
-              onClick={() => selectTab('track')}
+              onClick={() => navigate('/track')}
               className="bg-slate-950 hover:bg-slate-900 text-white font-sans font-semibold text-xs py-2.5 px-4.5 rounded-xl uppercase tracking-wider transition cursor-pointer flex items-center gap-2"
             >
               Secure Tracking <ArrowRight className="w-3.5 h-3.5 text-sky-400" />
@@ -281,24 +293,28 @@ export default function App() {
                       { id: 'track', label: 'Search Status' }
                     ]
                 ).map((item) => (
-                  <button
+                  <Link
                     key={item.id}
-                    onClick={() => selectTab(item.id as ActiveTab)}
-                    className={`w-full text-left py-3 px-4 rounded-xl font-sans font-bold text-xs uppercase tracking-wider transition ${
+                    to={item.id === 'home' ? '/' : `/${item.id}`}
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    className={`block w-full text-left py-3 px-4 rounded-xl font-sans font-bold text-xs uppercase tracking-wider transition ${
                       activeTab === item.id 
                         ? 'bg-slate-950 text-white' 
                         : 'text-slate-600 hover:bg-slate-50'
                     }`}
                   >
                     {item.label}
-                  </button>
+                  </Link>
                 ))}
 
                 {isAdminAuthenticated && (
                   <button
                     onClick={() => {
                       setIsAdminAuthenticated(false);
-                      selectTab('home');
+                      navigate('/');
                     }}
                     className="w-full text-[11px] text-left py-3 px-4 rounded-xl font-sans font-bold text-xs uppercase tracking-wider transition text-rose-600 hover:bg-rose-50 flex items-center gap-1.5"
                   >
@@ -365,7 +381,7 @@ export default function App() {
                     setIsAdminAuthenticated(true);
                   }}
                   onCancel={() => {
-                    selectTab('home');
+                    navigate('/');
                   }}
                 />
               )
@@ -385,13 +401,11 @@ export default function App() {
           {/* Brief */}
           <div className="space-y-4">
             <div className="flex items-center gap-3">
-              <span className="w-9 h-9 bg-slate-900 rounded-lg overflow-hidden flex items-center justify-center border border-slate-800">
-                <img 
-                  src="/favicon.png" 
-                  alt="Apex Track Hub" 
-                  referrerPolicy="no-referrer"
-                  className="w-full h-full object-cover"
-                />
+              <span className="w-9 h-9 bg-slate-900 rounded-lg flex items-center justify-center border border-slate-800 text-sky-500">
+                <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" className="w-5 h-5">
+                  <polygon points="50,15 90,85 10,85" fill="none" stroke="currentColor" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round"/>
+                  <polygon points="50,40 75,85 25,85" fill="currentColor"/>
+                </svg>
               </span>
               <span className="font-sans font-black text-white text-md uppercase tracking-wide">APEX TRANS</span>
             </div>
@@ -409,11 +423,11 @@ export default function App() {
           <div className="space-y-4 text-xs font-sans">
             <h4 className="font-bold text-white uppercase tracking-widest font-sans text-xs">Logistic Portals</h4>
             <div className="grid grid-cols-2 gap-2">
-              <button onClick={() => selectTab('home')} className="hover:text-white transition cursor-pointer text-left py-1">Home Portal</button>
-              <button onClick={() => selectTab('about')} className="hover:text-white transition cursor-pointer text-left py-1">Our Story</button>
-              <button onClick={() => selectTab('services')} className="hover:text-white transition cursor-pointer text-left py-1">Port Services</button>
-              <button onClick={() => selectTab('track')} className="hover:text-white transition cursor-pointer text-left py-1">Track Container</button>
-              <button onClick={() => selectTab('admin')} className="hover:text-white transition cursor-pointer text-left py-1 text-sky-400 font-semibold">Supabase Admin</button>
+              <Link to="/" onClick={() => window.scrollTo(0,0)} className="hover:text-white transition cursor-pointer text-left py-1">Home Portal</Link>
+              <Link to="/about" onClick={() => window.scrollTo(0,0)} className="hover:text-white transition cursor-pointer text-left py-1">Our Story</Link>
+              <Link to="/services" onClick={() => window.scrollTo(0,0)} className="hover:text-white transition cursor-pointer text-left py-1">Port Services</Link>
+              <Link to="/track" onClick={() => window.scrollTo(0,0)} className="hover:text-white transition cursor-pointer text-left py-1">Track Container</Link>
+              <Link to="/admin" onClick={() => window.scrollTo(0,0)} className="hover:text-white transition cursor-pointer text-left py-1 text-sky-400 font-semibold">Supabase Admin</Link>
             </div>
           </div>
 
@@ -457,15 +471,12 @@ export default function App() {
                     setContactError(null);
 
                     try {
-                      const response = await fetch('/api/send-email', {
+                      const response = await fetch('/api/subscribe', {
                         method: 'POST',
                         headers: {
                           'Content-Type': 'application/json'
                         },
-                        body: JSON.stringify({
-                          type: 'newsletter_signup',
-                          email: emailVal
-                        })
+                        body: JSON.stringify({ email: emailVal })
                       });
 
                       if (response.ok) {

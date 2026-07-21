@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Search, MapPin, Calendar, Scale, Box, Check, FileText, Truck, ArrowRight, ShieldCheck, Map, Clock, AlertCircle, Bell, Mail, Send, Loader2, Trash2, X } from 'lucide-react';
 import { Shipment, ShipmentStatus } from '../types';
 import TrackingMap from './TrackingMap';
-import { trackEvent } from '../lib/tracking';
+import { trackEvent, supabase } from '../lib/tracking';
 
 interface TrackViewProps {
   currentTrackingId: string;
@@ -206,28 +206,60 @@ export default function TrackView({ currentTrackingId, onSearch, availableShipme
   // Handle outside search prop updates
   useEffect(() => {
     setSearchVal(currentTrackingId);
+    
     if (currentTrackingId) {
-      const match = availableShipments.find(
-        s => s.id.toUpperCase() === currentTrackingId.trim().toUpperCase()
-      );
-      if (match) {
-        if (match.visibility === 'hidden') {
-          setSelectedShipment(null);
-          setErrorMessage('Target shipment is currently deactivated by the administrator cargo control panel.');
-          trackEvent("cargo_search_deactivated", { trackingId: currentTrackingId });
-        } else {
-          setSelectedShipment(match);
-          setErrorMessage('');
-          if (match.email) {
-            setEmail(match.email);
+      const trackingQuery = currentTrackingId.trim().toUpperCase();
+      
+      const performSearch = async () => {
+        let match: Shipment | null = null;
+        
+        if (supabase) {
+          try {
+            // Search in tracking_data table where event_data->>trackingId matches, etc.
+            const { data, error } = await supabase
+              .from('tracking_data')
+              .select('*')
+              .or(`event_data->>trackingId.eq.${trackingQuery},event_data->>trackingNumber.eq.${trackingQuery},event_data->>id.eq.${trackingQuery}`)
+              .order('id', { ascending: false })
+              .limit(1);
+
+            if (!error && data && data.length > 0) {
+              match = data[0].event_data as Shipment;
+            }
+          } catch (e) {
+            console.error('Supabase search failed', e);
           }
-          trackEvent("cargo_search_success", { trackingId: currentTrackingId, carrier: match.carrier, status: match.status });
         }
-      } else {
-        setSelectedShipment(null);
-        setErrorMessage('Tracking number not found. Verify code format or contact dispatch.');
-        trackEvent("cargo_search_not_found", { trackingId: currentTrackingId });
-      }
+
+        // Fallback to local availableShipments if not found via Supabase (or Supabase offline)
+        if (!match) {
+          const localMatch = availableShipments.find(
+            s => s.id.toUpperCase() === trackingQuery
+          );
+          if (localMatch) match = localMatch;
+        }
+
+        if (match) {
+          if (match.visibility === 'hidden') {
+            setSelectedShipment(null);
+            setErrorMessage('Target shipment is currently deactivated by the administrator cargo control panel.');
+            trackEvent("cargo_search_deactivated", { trackingId: trackingQuery });
+          } else {
+            setSelectedShipment(match);
+            setErrorMessage('');
+            if (match.email) {
+              setEmail(match.email);
+            }
+            trackEvent("cargo_search_success", { trackingId: trackingQuery, carrier: match.carrier, status: match.status });
+          }
+        } else {
+          setSelectedShipment(null);
+          setErrorMessage('No shipment found for this tracking number.');
+          trackEvent("cargo_search_not_found", { trackingId: trackingQuery });
+        }
+      };
+
+      performSearch();
     } else {
       setSelectedShipment(null);
       setErrorMessage('');
@@ -237,7 +269,7 @@ export default function TrackView({ currentTrackingId, onSearch, availableShipme
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!searchVal.trim()) {
-      setErrorMessage('Please enter a custom tracking number code.');
+      setErrorMessage('Please enter a valid tracking number.');
       return;
     }
     onSearch(searchVal.trim());

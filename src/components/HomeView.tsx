@@ -385,7 +385,7 @@ export default function HomeView({ onSearch, availableShipments, isAdminAuthenti
             <div className="bg-white rounded-2xl overflow-hidden shadow-xs hover:shadow-md transition duration-200 group border border-slate-100">
               <div className="h-48 overflow-hidden relative">
                 <img 
-                  src="https://lh3.googleusercontent.com/d/1-47OmBDMXE1mH5CL_ruAj_BxgRk1FCc5" 
+                  src="https://lh3.googleusercontent.com/d/1yX2kArvwe1GItFc4DvF_v-udwyAGVtfE" 
                   alt="Ocean Maritime Vessel" 
                   referrerPolicy="no-referrer"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
@@ -393,7 +393,7 @@ export default function HomeView({ onSearch, availableShipments, isAdminAuthenti
                 <span className="absolute top-4 right-4 bg-sky-500 text-slate-950 font-sans font-semibold text-xs py-1 px-3 rounded-full uppercase tracking-wider">Oceanic Freight</span>
               </div>
               <div className="p-6 space-y-3">
-                <h3 className="text-lg font-bold text-slate-900">Ground dispatch</h3>
+                <h3 className="text-lg font-bold text-slate-900">Oceanic Freight</h3>
                 <p className="text-slate-500 text-sm leading-relaxed">Handling multi-ton sea container freighters across Atlantic and Pacific pathways. Customized refrigerated units are monitored hour-by-hour.</p>
                 <div className="pt-2 flex items-center gap-2 text-xs font-mono text-slate-400">
                   <Anchor className="w-4 h-4 text-sky-500" /> Seattle / Houston / Long Beach Hubs
