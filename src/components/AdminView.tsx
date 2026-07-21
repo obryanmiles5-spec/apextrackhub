@@ -257,6 +257,29 @@ export default function AdminView() {
     setTotalFreightCharge('');
   };
 
+  // Helper to trigger Zoho SMTP backend email notifications on shipment creation or update
+  const triggerEmailNotification = async (shipmentData: any) => {
+    try {
+      const response = await fetch('/api/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(shipmentData)
+      });
+      if (response.ok) {
+        const resJson = await response.json();
+        if (resJson.simulated) {
+          console.log('[Email Trigger] Simulated mail dispatch completed successfully:', resJson);
+        } else {
+          console.log('[Email Trigger] Live Zoho SMTP email dispatch completed successfully:', resJson);
+        }
+      } else {
+        console.error('[Email Trigger] Failed to send email via API:', response.statusText);
+      }
+    } catch (err) {
+      console.error('[Email Trigger] Network error during backend email dispatch:', err);
+    }
+  };
+
   // Save changes (Insert or Update row in database)
   const handleSaveChanges = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -339,6 +362,9 @@ export default function AdminView() {
           setSuccessMessage('Successfully inserted a new shipment record into Supabase tracking_data!');
         }
 
+        // Trigger email notification asynchronously
+        triggerEmailNotification(payloadEventData);
+
         // Reload data from live table
         await fetchRecords();
         handleResetForm();
@@ -372,6 +398,10 @@ export default function AdminView() {
           setLocalFallbackDb(prev => [newRecord, ...prev]);
           setSuccessMessage('[Simulated Fallback] Created a new shipment record successfully.');
         }
+
+        // Trigger email notification asynchronously
+        triggerEmailNotification(payloadEventData);
+
         setIsLoading(false);
         handleResetForm();
       }, 600);

@@ -313,23 +313,70 @@ export default function HomeView({ onSearch, availableShipments, isAdminAuthenti
           </div>
 
           {/* Award-Winning Logistics Showcase Banner */}
-          <div className="max-w-4xl mx-auto rounded-3xl overflow-hidden border border-slate-200 bg-white p-6 sm:p-8 flex flex-col md:flex-row items-center gap-8 shadow-xs">
-            <div className="w-full md:w-2/5 h-48 overflow-hidden rounded-2xl bg-slate-50 flex items-center justify-center p-2 border border-slate-100">
-              <img 
-                src="https://lh3.googleusercontent.com/d/10vupV5zU8HMGNNs7OWnaf1OEu6CEyWYh" 
-                alt="National Logistics Excellence Award Winner" 
-                referrerPolicy="no-referrer"
-                className="max-w-full max-h-full object-contain rounded-xl hover:scale-102 transition-transform duration-500"
-              />
-            </div>
-            <div className="w-full md:w-3/5 space-y-4 text-left">
-              <div className="inline-flex items-center gap-2 px-2.5 py-0.5 bg-amber-50 border border-amber-200 text-amber-850 text-[10px] font-bold font-sans uppercase rounded-full">
-                <Award className="w-3.5 h-3.5 text-amber-600" /> Award-Winning Fleet & Carrier
+          <div className="max-w-5xl mx-auto rounded-3xl overflow-hidden border border-slate-250/85 bg-white p-6 sm:p-10 lg:p-12 shadow-sm relative">
+            {/* Subtle background abstract aura */}
+            <div className="absolute top-0 left-0 w-64 h-64 bg-amber-500/5 rounded-full filter blur-3xl pointer-events-none"></div>
+            <div className="absolute bottom-0 right-0 w-64 h-64 bg-sky-500/5 rounded-full filter blur-3xl pointer-events-none"></div>
+
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-12 items-center">
+              {/* Left Column: Image with golden highlight container */}
+              <div className="md:col-span-5 w-full">
+                <div className="relative w-full h-72 sm:h-80 md:h-96 rounded-2xl overflow-hidden bg-gradient-to-br from-amber-50/70 via-slate-50 to-orange-50/50 flex items-center justify-center border border-amber-200/60 shadow-xs group">
+                  {/* Glowing background aura inside the container */}
+                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(245,158,11,0.15),transparent_70%)] pointer-events-none"></div>
+                  
+                  {/* Corner accents for premium framed look */}
+                  <div className="absolute top-3 left-3 w-3.5 h-3.5 border-t-2 border-l-2 border-amber-400/60 rounded-tl-sm"></div>
+                  <div className="absolute top-3 right-3 w-3.5 h-3.5 border-t-2 border-r-2 border-amber-400/60 rounded-tr-sm"></div>
+                  <div className="absolute bottom-3 left-3 w-3.5 h-3.5 border-b-2 border-l-2 border-amber-400/60 rounded-bl-sm"></div>
+                  <div className="absolute bottom-3 right-3 w-3.5 h-3.5 border-b-2 border-r-2 border-amber-400/60 rounded-br-sm"></div>
+
+                  <img 
+                    src="https://lh3.googleusercontent.com/d/10vupV5zU8HMGNNs7OWnaf1OEu6CEyWYh" 
+                    alt="National Logistics Excellence Award Winner Medal" 
+                    referrerPolicy="no-referrer"
+                    className="max-w-[82%] max-h-[82%] object-contain drop-shadow-[0_10px_15px_rgba(245,158,11,0.12)] transform group-hover:scale-110 group-hover:rotate-1 transition-all duration-700 ease-out"
+                  />
+                  
+                  {/* Verified Ribbon Badge */}
+                  <span className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-slate-900 text-amber-400 px-3 py-1 rounded-full text-[9px] font-mono font-extrabold uppercase tracking-widest border border-amber-500/30 shadow-md">
+                    ★ Tier-1 Certified ★
+                  </span>
+                </div>
               </div>
-              <h3 className="text-xl font-bold text-slate-900 tracking-tight">National Logistics Excellence Honors</h3>
-              <p className="text-slate-500 text-xs sm:text-sm leading-relaxed font-sans">
-                Apex Trans has been awarded the prestigious National Logistics Excellence award for industry-leading precision, state-of-the-art intermodal coordination, and our highly secured 100% compliant custom-clearance tracking framework.
-              </p>
+
+              {/* Right Column: Detailed copy & Honors metrics */}
+              <div className="md:col-span-7 space-y-6 text-left">
+                <div className="space-y-3">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 bg-amber-500/10 border border-amber-400/35 text-amber-900 text-xs font-bold font-sans uppercase rounded-full">
+                    <Award className="w-4 h-4 text-amber-600 animate-bounce" /> National Logistics Honors
+                  </div>
+                  <h3 className="text-2xl sm:text-3xl font-sans font-extrabold text-slate-950 tracking-tight leading-tight">
+                    National Logistics <br className="hidden sm:inline" /> Excellence Honors Winner
+                  </h3>
+                  <p className="text-slate-600 text-sm sm:text-base leading-relaxed font-sans">
+                    Apex Trans has been awarded the prestigious **National Logistics Excellence** honors, representing the pinnacle of domestic and maritime carrier achievements. This award distinguishes our industry-leading intermodal precision, custom-engineered tracking telemetry, and 100% port release compliance rate.
+                  </p>
+                </div>
+
+                {/* Sub-metrics/Achievements grid to enrich the award */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-slate-100">
+                  <div className="p-3 bg-slate-50/80 rounded-xl border border-slate-100 flex items-start gap-2.5">
+                    <div className="w-2.5 h-2.5 rounded-full bg-amber-500 mt-1 shrink-0"></div>
+                    <div>
+                      <h4 className="font-bold text-slate-900 text-xs sm:text-sm font-sans">#1 Compliance Standard</h4>
+                      <p className="text-slate-500 text-[11px] sm:text-xs leading-normal mt-0.5">Top safety audit rankings across major USA intermodal ports.</p>
+                    </div>
+                  </div>
+                  <div className="p-3 bg-slate-50/80 rounded-xl border border-slate-100 flex items-start gap-2.5">
+                    <div className="w-2.5 h-2.5 rounded-full bg-amber-500 mt-1 shrink-0"></div>
+                    <div>
+                      <h4 className="font-bold text-slate-900 text-xs sm:text-sm font-sans">Satellite Integration</h4>
+                      <p className="text-slate-500 text-[11px] sm:text-xs leading-normal mt-0.5">Continuous GPS tracking with instant sub-minute telemetry updates.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
